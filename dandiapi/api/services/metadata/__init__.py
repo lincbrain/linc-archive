@@ -116,11 +116,11 @@ def validate_version_metadata(*, version: Version) -> None:
         metadata_for_validation['doi'] = '10.80507/dandi.123456/0.123456.1234'
         metadata_for_validation['assetsSummary'] = {
             'schemaKey': 'AssetsSummary',
-            'numberOfBytes': 1 if publishable_version.assets.filter(
-                Q(blob__size__gt=0) |
-                Q(zarr__size__gt=0) |
-                Q(embargoed_blob__size__gt=0)
-             ).exists() else 0,
+            'numberOfBytes': 1
+            if version.assets.filter(
+                Q(blob__size__gt=0) | Q(zarr__size__gt=0) | Q(embargoed_blob__size__gt=0)
+            ).exists()
+            else 0,
             'numberOfFiles': 1 if version.assets.exists() else 0,
         }
         return metadata_for_validation
