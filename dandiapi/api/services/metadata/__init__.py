@@ -113,6 +113,10 @@ def validate_version_metadata(*, version: Version) -> None:
             'url'
         ] = f'{settings.DANDI_WEB_APP_URL}/dandiset/{publishable_version.dandiset.identifier}/{publishable_version.version}'  # noqa
         metadata_for_validation['doi'] = '10.80507/dandi.123456/0.123456.1234'
+        logger.info("AARON-YOYO")
+        logger.info('Validating dandiset metadata for version %s', type(version.assets))
+        logger.info('Validating dandiset metadata for version %s', version.assets)
+        logger.info('Validating dandiset metadata for version %s', version.assets.exists())
         metadata_for_validation['assetsSummary'] = {
             'schemaKey': 'AssetsSummary',
             'numberOfBytes': 1 if version.assets.filter(blob__size__gt=0).exists() else 0,

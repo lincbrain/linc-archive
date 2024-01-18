@@ -61,6 +61,8 @@ from dandiapi.api.views.serializers import (
 
 
 class AssetFilter(filters.FilterSet):
+
+    # Aaron
     path = filters.CharFilter(lookup_expr='istartswith')
     order = filters.OrderingFilter(fields=['created', 'modified', 'path'])
 
