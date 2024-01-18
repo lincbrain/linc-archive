@@ -43,6 +43,7 @@ def throttled_iterator(iterable: Iterable, max_per_second: int = 100) -> Iterabl
         time.sleep(1 / max_per_second)
 
 
+# TODO: Aaron -- part of validation error
 @shared_task(soft_time_limit=60)
 def aggregate_assets_summary_task(version_id: int):
     version = Version.objects.get(id=version_id)

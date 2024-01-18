@@ -236,7 +236,7 @@
             v-if="currentDandiset"
             class="text-caption"
           >
-            This Dandiset has {{ currentDandiset.version_validation_errors.length }}
+            This dataset has {{ currentDandiset.version_validation_errors.length }}
             metadata validation error(s).
           </div>
         </v-col>
