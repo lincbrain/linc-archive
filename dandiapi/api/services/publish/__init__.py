@@ -173,6 +173,12 @@ def _publish_dandiset(dandiset_id: int) -> None:
         new_version.metadata['doi'] = '10.80507/dandi.123456/0.123456.1234'
 
         # TODO: Aaron -- where validator is called
+
+        print("AARON-YOYO")
+        print('Validating dandiset metadata for version %s', type(new_version.assets))
+        print('Validating dandiset metadata for version %s', new_version.assets)
+        print('Validating dandiset metadata for version %s', new_version.assets.exists())
+
         validate(new_version.metadata, schema_key='PublishedDandiset', json_validation=True)
 
         # Write updated manifest files and create DOI after
