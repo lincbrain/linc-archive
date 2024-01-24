@@ -204,6 +204,7 @@ class HerokuProductionConfiguration(DandiMixin, HerokuProductionBaseConfiguratio
         'api.lincbrain.org',
         'staging-api.lincbrain.org'
     ]
+    
 
 
 # NOTE: The staging configuration uses a custom OAuth toolkit `Application` model
