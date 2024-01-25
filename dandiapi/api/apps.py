@@ -20,7 +20,6 @@ class PublishConfig(AppConfig):
         from dandiapi.api.models.version import Version
 
         def is_noisy():
-            # This single docstring is a trivial change...
             # these are noisy routes that we can reduce the sampling size for.
             # TODO: use the django url resolver to avoid redefining regular expressions.
             noisy_route_regex = [
