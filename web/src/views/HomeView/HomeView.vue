@@ -26,6 +26,7 @@
                 LINC BRAIN Initiative
               </div>
               <div class="text-h6 font-weight-light text-center">
+                This should only appear on production!
                 The BRAIN Initiative archive for publishing and sharing
                 neurophysiology data including electrophysiology,
                 optophysiology, and behavioral time-series, and images from
