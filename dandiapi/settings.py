@@ -199,7 +199,7 @@ class HerokuProductionConfiguration(DandiMixin, HerokuProductionBaseConfiguratio
         ALLOWED_HOSTS = []
 
     ALLOWED_HOSTS += [
-        'linc-staging-terraform-83d11b79c499.herokuapp.com',
+        'linc-brain-staging-7c7293e5e9f8.herokuapp.com',
         "api.lincbrain.org",
         'staging-api.lincbrain.org'
     ]
@@ -217,4 +217,6 @@ class HerokuStagingConfiguration(HerokuProductionConfiguration):
     if 'ALLOWED_HOSTS' not in globals():
         ALLOWED_HOSTS = []
 
-    ALLOWED_HOSTS += ['linc-staging-terraform-83d11b79c499.herokuapp.com']
+    ALLOWED_HOSTS += [
+        'linc-brain-staging-7c7293e5e9f8.herokuapp.com'
+    ]
