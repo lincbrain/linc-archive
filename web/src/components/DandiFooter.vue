@@ -15,7 +15,7 @@
       </cookie-law>
       <v-row>
         <v-col offset="2">
-          &copy; 2024 The LINC Archive Team<br>
+          &copy; 2024 The LINC Platform Team<br>
           version
           <a
             class="version-link"
