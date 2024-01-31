@@ -89,11 +89,11 @@ jobs:
         if: failure()
         run: |
           docker-compose \
-            -f "$pythonLocation/lib/python${{ matrix.python }}/site-packages/dandi/tests/data/dandiarchive-docker/docker-compose.yml" \
+            -f "$pythonLocation/lib/python${{ matrix.python }}/site-packages/lincbrain/tests/data/dandiarchive-docker/docker-compose.yml" \
             logs --timestamps
 
       - name: Shut down Docker Compose
         run: |
           docker-compose \
-            -f "$pythonLocation/lib/python${{ matrix.python }}/site-packages/dandi/tests/data/dandiarchive-docker/docker-compose.yml" \
+            -f "$pythonLocation/lib/python${{ matrix.python }}/site-packages/lincbrain/tests/data/dandiarchive-docker/docker-compose.yml" \
             down -v
