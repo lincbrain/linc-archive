@@ -77,7 +77,7 @@ jobs:
       - name: Run dandi-api tests in linc-cli
         run: |
           python -m pytest --dandi-api \
-            "$pythonLocation/lib/python${{ matrix.python }}/site-packages/linc-cli"
+            "$pythonLocation/lib/python${{ matrix.python }}/site-packages/lincbrain-cli"
         env:
           DANDI_TESTS_PERSIST_DOCKER_COMPOSE: "1"
 
