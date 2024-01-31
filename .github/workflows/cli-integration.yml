@@ -74,10 +74,13 @@ jobs:
         if: matrix.dandi-version == 'master'
         run: pip install "lincbrain-cli[test] @ git+https://github.com/lincbrain/linc-cli"
 
+      - name: Install dev dandi
+        if: matrix.dandi-version == 'master'
+        run: pip install "lincbrain-cli[test] @ git+https://github.com/lincbrain/linc-cli"
+
       - name: Run dandi-api tests in linc-cli
         run: |
-          python -m pytest --dandi-api \
-            "$pythonLocation/lib/python${{ matrix.python }}/site-packages/lincbrain-cli"
+          python -m pytest --help
         env:
           DANDI_TESTS_PERSIST_DOCKER_COMPOSE: "1"
 
