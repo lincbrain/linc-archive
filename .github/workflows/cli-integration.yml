@@ -82,11 +82,11 @@ jobs:
         run: pip list
 
       - name: See packages x2
-        run: pwd && ls
+        run: pip list
 
       - name: Run dandi-api tests in linc-cli
         run: |
-          python -m pytest
+          python -m pytest --dandi-api "/opt/hostedtoolcache/Python/${{ matrix.python }}/x64/lib/python${{ matrix.python }}/site-packages/lincbrain-cli"
         env:
           DANDI_TESTS_PERSIST_DOCKER_COMPOSE: "1"
 
