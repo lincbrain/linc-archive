@@ -19,13 +19,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install awscli -y
 
-      - name: Heroku Login
-        run: |
-          heroku auth:token -a ${{ secrets.HEROKU_APP_NAME }}
+      - name: Capture Backup
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-
-      - name: Capture Backup
         run: |
           DATABASE_URL=$(heroku config:get DATABASE_URL -a ${{ secrets.HEROKU_APP_NAME }})
           echo "DATABASE_URL: $DATABASE_URL"
