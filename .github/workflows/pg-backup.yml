@@ -1,7 +1,9 @@
-name: Backup Heroku Database to S3
+name: Backup Production Heroku Database to S3
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Allows for manual triggering of the workflow
+  schedule:
+    - cron: '50 21 * * *'  # Runs at 9:50 PM UTC every
 
 jobs:
   backup:
@@ -41,9 +43,6 @@ jobs:
           DB_PORT=$(echo $DATABASE_URL | cut -d':' -f4 | cut -d'/' -f1)
           DB_NAME=$(echo $DATABASE_URL | cut -d'/' -f4)
 
-          echo "DB Host: $DB_HOST"
-          echo "DB User: $DB_USER"
-          echo "DB Name: $DB_NAME"
           export PGPASSWORD=$DB_PASS
 
           pg_dump -Fc --no-acl --no-owner -h $DB_HOST -U $DB_USER -d $DB_NAME -p $DB_PORT > db.dump
