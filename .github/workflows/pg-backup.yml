@@ -27,15 +27,22 @@ jobs:
 
       - name: Capture Backup
         run: |
-          DB_HOST=$(heroku config:get DATABASE_HOST -a ${{ secrets.HEROKU_APP_NAME }})
-          DB_USER=$(heroku config:get DATABASE_USER -a ${{ secrets.HEROKU_APP_NAME }})
-          DB_NAME=$(heroku config:get DATABASE_NAME -a ${{ secrets.HEROKU_APP_NAME }})
+          DATABASE_URL=$(heroku config:get DATABASE_URL -a ${{ secrets.HEROKU_APP_NAME }})
+          echo "DATABASE_URL: $DATABASE_URL"
+
+          # Parsing the DATABASE_URL to extract components
+          DB_USER=$(echo $DATABASE_URL | cut -d':' -f2 | sed 's|//||g')
+          DB_PASS=$(echo $DATABASE_URL | cut -d':' -f3 | cut -d'@' -f1)
+          DB_HOST=$(echo $DATABASE_URL | cut -d'@' -f2 | cut -d':' -f1)
+          DB_PORT=$(echo $DATABASE_URL | cut -d':' -f4 | cut -d'/' -f1)
+          DB_NAME=$(echo $DATABASE_URL | cut -d'/' -f4)
+
           echo "DB Host: $DB_HOST"
           echo "DB User: $DB_USER"
           echo "DB Name: $DB_NAME"
-          PGPASSWORD=$(heroku config:get DATABASE_PASSWORD -a ${{ secrets.HEROKU_APP_NAME }})
-          export PGPASSWORD
-          pg_dump -Fc --no-acl --no-owner -h $DB_HOST -U $DB_USER $DB_NAME > db.dump
+          export PGPASSWORD=$DB_PASS
+
+          pg_dump -Fc --no-acl --no-owner -h $DB_HOST -U $DB_USER -d $DB_NAME -p $DB_PORT > db.dump
 
       - name: Upload Backup to S3
         run: |
