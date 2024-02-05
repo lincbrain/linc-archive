@@ -39,7 +39,7 @@
       </v-card-title>
       <v-list class="pa-0">
         <v-list-item dense>
-          Use this command in your DANDI CLI
+          Use this command in your LINC Brain CLI
         </v-list-item>
         <v-list-item dense>
           <CopyText
