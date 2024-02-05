@@ -27,7 +27,15 @@ jobs:
 
       - name: Capture Backup
         run: |
-          PGPASSWORD=$(heroku config:get DATABASE_PASSWORD -a ${{ secrets.HEROKU_APP_NAME }}) pg_dump -Fc --no-acl --no-owner -h $(heroku config:get DATABASE_HOST -a ${{ secrets.HEROKU_APP_NAME }}) -U $(heroku config:get DATABASE_USER -a ${{ secrets.HEROKU_APP_NAME }}) $(heroku config:get DATABASE_NAME -a ${{ secrets.HEROKU_APP_NAME }}) > db.dump
+          DB_HOST=$(heroku config:get DATABASE_HOST -a ${{ secrets.HEROKU_APP_NAME }})
+          DB_USER=$(heroku config:get DATABASE_USER -a ${{ secrets.HEROKU_APP_NAME }})
+          DB_NAME=$(heroku config:get DATABASE_NAME -a ${{ secrets.HEROKU_APP_NAME }})
+          echo "DB Host: $DB_HOST"
+          echo "DB User: $DB_USER"
+          echo "DB Name: $DB_NAME"
+          PGPASSWORD=$(heroku config:get DATABASE_PASSWORD -a ${{ secrets.HEROKU_APP_NAME }})
+          export PGPASSWORD
+          pg_dump -Fc --no-acl --no-owner -h $DB_HOST -U $DB_USER $DB_NAME > db.dump
 
       - name: Upload Backup to S3
         run: |
