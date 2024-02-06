@@ -1,9 +1,15 @@
 name: Backup Production Heroku Database to S3
 
+# This workflow invokes a Heroku "logical" backup: https://devcenter.heroku.com/articles/heroku-postgres-logical-backups
+#
+# Backups are already done via Heroku continuous protection services: https://devcenter.heroku.com/articles/heroku-postgres-data-safety-and-continuous-protection
+#
+# The reason behind this workflow is 1. a further safeguard for backing up our data, 2. the ability to use Postgres anywhere potentially, not just Heroku in the long-term if desired
+
 on:
-  workflow_dispatch:  # Allows for manual triggering of the workflow
+  workflow_dispatch:  # Allows for manual trigger if ad-hoc is desired
   schedule:
-    - cron: '50 21 * * *'  # Runs at 9:50 PM UTC every
+    - cron: '0 5 * * *'  # Runs at 5 AM UTC every day -- which is also 12PM EST at MIT
 
 jobs:
   backup:
@@ -34,7 +40,6 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           DATABASE_URL=$(heroku config:get DATABASE_URL -a ${{ secrets.HEROKU_APP_NAME }})
-          echo "DATABASE_URL: $DATABASE_URL"
 
           # Parsing the DATABASE_URL to extract components
           DB_USER=$(echo $DATABASE_URL | cut -d':' -f2 | sed 's|//||g')
