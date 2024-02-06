@@ -9,7 +9,7 @@ name: Backup Production Heroku Database to S3
 on:
   workflow_dispatch:  # Allows for manual trigger if ad-hoc is desired
   schedule:
-    - cron: '0 5 * * *'  # Runs at 5 AM UTC every day -- which is also 12PM EST at MIT
+    - cron: '0 5 * * *'  # Runs at 5AM UTC every day -- which is also 12AM EST at MIT
 
 jobs:
   backup:
