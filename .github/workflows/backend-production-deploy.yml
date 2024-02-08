@@ -31,7 +31,7 @@ jobs:
           python -m build --sdist
 
       - name: Create Heroku Build
-        run: heroku builds:create -a ${{ secrets.HEROKU_PRODUCTION_APP_NAME  }} --source-tar=dist/$(python setup.py --fullname).tar.gz
+        run: heroku builds:create -a ${{ secrets.HEROKU_PRODUCTION_APP_NAME  }}--source-tar dist/*.tar.gz
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY  }}
           HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL  }}
