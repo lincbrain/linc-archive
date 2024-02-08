@@ -27,7 +27,7 @@
               </div>
               <br>
               <div class="text-h6 font-weight-light text-center">
-                A cloud infrastructure and Data Archival for <a target="_blank" href="https://connects.mgh.harvard.edu/">LINC</a>, helping develop novel technologies for imaging brain connections down to the microscopic scale
+                A cloud infrastructure and data archival platform for <a target="_blank" href="https://connects.mgh.harvard.edu/">LINC</a>, helping develop novel technologies for imaging brain connections down to the microscopic scale
               </div>
               <br>
               <div class="text-h6 font-weight-light text-center">
