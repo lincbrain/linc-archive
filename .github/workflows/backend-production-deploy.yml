@@ -44,7 +44,9 @@ jobs:
         run: heroku plugins:install heroku-builds
 
       - name: Build app into tarball
-        run: python setup.py sdist --formats=gztar
+        run: |
+          pip install build
+          python -m build --sdist
 
       - name: Create Heroku Build
         run: heroku builds:create -a ${{ secrets.HEROKU_PRODUCTION_APP_NAME  }} --source-tar=dist/$(python setup.py --fullname).tar.gz
