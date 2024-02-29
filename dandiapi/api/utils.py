@@ -5,12 +5,11 @@ from cryptography.hazmat.backends import default_backend
 
 import base64
 import json
-import datetime
 
 class CloudFrontCookieGenerator:
 
 
-    def __init__(self, private_key_file):
+    def __init__(self):
         import os
         path = f'{os.getcwd()}/dandiapi/api/private_key.pem'
         with open(path, 'rb') as key_file:
@@ -43,22 +42,17 @@ class CloudFrontCookieGenerator:
             "Statement": [{
                 "Resource": resource,
                 "Condition": {
-                    "DateLessThan": {"AWS:EpochTime": 1709668553}
+                    "DateLessThan": {"AWS:EpochTime": expires_at}
                 }
             }]
         })
-
         encoded_policy = self._url_base64_encode(policy.encode('utf-8'))
-        signature = self.generate_signature(policy)
-
-        expires_in_minutes = 1000
-        expires_at = int((datetime.datetime.utcnow() + datetime.timedelta(minutes=expires_in_minutes)).timestamp())
+        signature = self.generate_signature(encoded_policy)
 
         cookies = {
-            "CloudFront-Policy": encoded_policy,
             "CloudFront-Signature": signature,
             "CloudFront-Key-Pair-Id": keypair_id,
-            "CloudFront-Expires": datetime.datetime(2024, 10, 1)
+            "CloudFront-Expires": expires_at
         }
 
         return cookies

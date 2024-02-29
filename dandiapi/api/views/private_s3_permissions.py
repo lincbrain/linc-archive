@@ -28,10 +28,11 @@ if TYPE_CHECKING:
 @permission_classes([IsAuthenticated])
 def presigned_cookie_s3_cloudfront_view(request: Request) -> HttpResponseBase:
     expires_in_minutes = 20
-    key_pair_id = 'K3PPZ7VIBFV71R'  # feb-29-key -- lincbrain AWS
-    object_url = 'https://d2du7pzm1jeax1.cloudfront.net/*'
 
-    cloudfront_cookie_generator = CloudFrontCookieGenerator(private_key_file='private_key.pem')
+    key_pair_id = 'K2NDLB5TAPBON9'  # thursday -- lincbrain AWS
+    object_url = 'https://neuroglancer.lincbrain.org/*'
+
+    cloudfront_cookie_generator = CloudFrontCookieGenerator()
     expires_at = int((datetime.datetime.utcnow() + datetime.timedelta(minutes=expires_in_minutes)).timestamp())
 
     cookies = cloudfront_cookie_generator.create_signed_cookies(
