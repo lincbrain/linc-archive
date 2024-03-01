@@ -6,56 +6,95 @@ from cryptography.hazmat.backends import default_backend
 import base64
 import json
 
-class CloudFrontCookieGenerator:
+import datetime
+from botocore.signers import CloudFrontSigner
+import rsa
 
 
-    def __init__(self):
-        import os
-        path = f'{os.getcwd()}/dandiapi/api/private_key.pem'
-        with open(path, 'rb') as key_file:
-            self.private_key = serialization.load_pem_private_key(
-                key_file.read(),
-                password=None,
-                backend=default_backend()
-            )
 
-    def _sign_string(self, message):
-        return self.private_key.sign(
-            message,
-            padding.PKCS1v15(),
-            hashes.SHA1()
-        )
+# def rsa_signer(message):
+#     private_key = open(path, 'r').read()
+#     return rsa.sign(message, rsa.PrivateKey.load_pkcs1(private_key.encode('utf8')), 'SHA-1')
+#
+# import rsa
 
-    @staticmethod
-    def _url_base64_encode(msg):
-        msg_base64 = base64.b64encode(msg).decode('utf-8')
-        msg_base64 = msg_base64.replace('+', '-').replace('=', '_').replace('/', '~')
-        return msg_base64
 
-    def generate_signature(self, policy):
-        signature = self._sign_string(policy.encode('utf-8'))
-        encoded_signature = self._url_base64_encode(signature)
-        return encoded_signature
 
-    def create_signed_cookies(self, resource, keypair_id, expires_at):
-        policy = json.dumps({
-            "Statement": [{
-                "Resource": resource,
-                "Condition": {
-                    "DateLessThan": {"AWS:EpochTime": expires_at}
-                }
-            }]
-        })
-        encoded_policy = self._url_base64_encode(policy.encode('utf-8'))
-        signature = self.generate_signature(encoded_policy)
+def get_presigned_cookies(key_pair_id, path='/*', expires=None):
+    if not expires:
+        expires = datetime.datetime.utcnow() + datetime.timedelta(days=1)  # 1 day from now
 
-        cookies = {
-            "CloudFront-Signature": signature,
-            "CloudFront-Key-Pair-Id": keypair_id,
-            "CloudFront-Expires": expires_at
-        }
+    # Generate a policy for the specified path and expiry time
+    policy = {
+        'Statement': [{
+            'Resource': path,
+            'Condition': {
+                'DateLessThan': {'AWS:EpochTime': int(expires.timestamp())}
+            }
+        }]
+    }
 
-        return cookies
+    # JSON serialize it, encode in base64 and then sign it
+    policy_string = json.dumps(policy)
+    policy_64 = base64.b64encode(policy_string.encode('utf-8')).decode('utf-8')
+    object_url = 'https://neuroglancer.lincbrain.org/*'
+    # print(cf_signer_url)
+    # signature = base64.b64encode(cf_signer.sign(policy_string, expires)).decode('utf-8')
+
+    # The resulting cookies
+    cookies = {
+        # 'CloudFront-Policy': policy_64,
+        # 'CloudFront-Signature': signature.replace('+', '-').replace('=', '_').replace('/', '~'),
+        # 'CloudFront-Key-Pair-Id': key_pair_id
+    }
+
+    return cookies
+
+    # def __init__(self):
+    #     with open(path, 'rb') as key_file:
+    #         self.private_key = serialization.load_pem_private_key(
+    #             key_file.read(),
+    #             password=None,
+    #             backend=default_backend()
+    #         )
+    #
+    # def _sign_string(self, message):
+    #     return self.private_key.sign(
+    #         message,
+    #         padding.PKCS1v15(),
+    #         hashes.SHA1()
+    #     )
+    #
+    # @staticmethod
+    # def _url_base64_encode(msg):
+    #     msg_base64 = base64.b64encode(msg).decode('utf-8')
+    #     msg_base64 = msg_base64.replace('+', '-').replace('=', '_').replace('/', '~')
+    #     return msg_base64
+    #
+    # def generate_signature(self, policy):
+    #     signature = self._sign_string(policy.encode('utf-8'))
+    #     encoded_signature = self._url_base64_encode(signature)
+    #     return encoded_signature
+    #
+    # def create_signed_cookies(self, resource, keypair_id, expires_at):
+    #     policy = json.dumps({
+    #         "Statement": [{
+    #             "Resource": resource,
+    #             "Condition": {
+    #                 "DateLessThan": {"AWS:EpochTime": expires_at}
+    #             }
+    #         }]
+    #     })
+    #     encoded_policy = self._url_base64_encode(policy.encode('utf-8'))
+    #     signature = self.generate_signature(encoded_policy)
+    #
+    #     cookies = {
+    #         "CloudFront-Signature": signature,
+    #         "CloudFront-Key-Pair-Id": keypair_id,
+    #         "CloudFront-Expires": expires_at
+    #     }
+    #
+    #     return cookies
 
 
 # def create_signed_cookies(object_url, keypair_id, private_key_file, expire_minutes=20):
