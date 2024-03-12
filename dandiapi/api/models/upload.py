@@ -105,7 +105,7 @@ class Upload(BaseUpload):
         )
 
 
-class EmbargoedUpload(BaseUpload):
+bargoedUpload(BaseUpload):
     blob = models.FileField(
         blank=True, storage=get_embargo_storage, upload_to=get_embargo_storage_prefix
     )
