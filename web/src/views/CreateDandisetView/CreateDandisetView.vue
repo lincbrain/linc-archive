@@ -193,9 +193,7 @@ async function registerDandiset() {
     name: name.value,
     description: description.value,
   };
-
-  console.log(license)
-
+  
   if (license.value) {
     metadata.license = [license.value];
   }
