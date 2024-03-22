@@ -199,55 +199,55 @@
                     <span>View asset metadata</span>
                   </v-tooltip>
                 </v-list-item-action>
-<!--                <v-list-item-action v-if="item.asset">-->
-<!--                  <v-menu-->
-<!--                    bottom-->
-<!--                    left-->
-<!--                  >-->
-<!--                    <template #activator="{ on, attrs }">-->
-<!--                      <v-btn-->
-<!--                        v-if="item.services && item.services.length"-->
-<!--                        color="primary"-->
-<!--                        icon-->
-<!--                        title="Open in external service"-->
-<!--                        v-bind="attrs"-->
-<!--                        v-on="on"-->
-<!--                      >-->
-<!--                        <v-icon>mdi-dots-vertical</v-icon>-->
-<!--                      </v-btn>-->
-<!--                      <v-btn-->
-<!--                        v-else-->
-<!--                        color="primary"-->
-<!--                        disabled-->
-<!--                        icon-->
-<!--                      >-->
-<!--                        <v-icon>mdi-dots-vertical</v-icon>-->
-<!--                      </v-btn>-->
-<!--                    </template>-->
-<!--&lt;!&ndash;                    <v-list&ndash;&gt;-->
-<!--&lt;!&ndash;                      v-if="item && item.services"&ndash;&gt;-->
-<!--&lt;!&ndash;                      dense&ndash;&gt;-->
-<!--&lt;!&ndash;                    >&ndash;&gt;-->
-<!--&lt;!&ndash;                      <v-subheader&ndash;&gt;-->
-<!--&lt;!&ndash;                        v-if="item.services.length"&ndash;&gt;-->
-<!--&lt;!&ndash;                        class="font-weight-medium"&ndash;&gt;-->
-<!--&lt;!&ndash;                      >&ndash;&gt;-->
-<!--&lt;!&ndash;                        EXTERNAL SERVICES&ndash;&gt;-->
-<!--&lt;!&ndash;                      </v-subheader>&ndash;&gt;-->
-<!--&lt;!&ndash;                      <v-list-item&ndash;&gt;-->
-<!--&lt;!&ndash;                        v-for="el in item.services"&ndash;&gt;-->
-<!--&lt;!&ndash;                        :key="el.name"&ndash;&gt;-->
-<!--&lt;!&ndash;                        :href="el.url"&ndash;&gt;-->
-<!--&lt;!&ndash;                        target="_blank"&ndash;&gt;-->
-<!--&lt;!&ndash;                        rel="noreferrer"&ndash;&gt;-->
-<!--&lt;!&ndash;                      >&ndash;&gt;-->
-<!--&lt;!&ndash;                        <v-list-item-title class="font-weight-light">&ndash;&gt;-->
-<!--&lt;!&ndash;                          {{ el.name }}&ndash;&gt;-->
-<!--&lt;!&ndash;                        </v-list-item-title>&ndash;&gt;-->
-<!--&lt;!&ndash;                      </v-list-item>&ndash;&gt;-->
-<!--&lt;!&ndash;                    </v-list>&ndash;&gt;-->
-<!--                  </v-menu>-->
-<!--                </v-list-item-action>-->
+                <v-list-item-action v-if="item.asset">
+                  <v-menu
+                    bottom
+                    left
+                  >
+                    <template #activator="{ on, attrs }">
+                      <v-btn
+                        v-if="item.services && item.services.length"
+                        color="primary"
+                        icon
+                        title="Open in external service"
+                        v-bind="attrs"
+                        v-on="on"
+                      >
+                        <v-icon>mdi-dots-vertical</v-icon>
+                      </v-btn>
+                      <v-btn
+                        v-else
+                        color="primary"
+                        disabled
+                        icon
+                      >
+                        <v-icon>mdi-dots-vertical</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-list
+                      v-if="item && item.services"
+                      dense
+                    >
+                      <v-subheader
+                        v-if="item.services.length"
+                        class="font-weight-medium"
+                      >
+                        EXTERNAL SERVICES
+                      </v-subheader>
+                      <v-list-item
+                        v-for="el in item.services"
+                        :key="el.name"
+                        :href="el.url"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <v-list-item-title class="font-weight-light">
+                          {{ el.name }}
+                        </v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
+                </v-list-item-action>
 
                 <v-list-item-action
                   v-if="item.aggregate_size"
@@ -324,39 +324,44 @@ const sortByFolderThenName = (a: ExtendedAssetPath, b: ExtendedAssetPath) => {
 };
 
 const EXTERNAL_SERVICES = [
+  // {
+  //   name: 'Bioimagesuite/Viewer',
+  //   regex: /\.nii(\.gz)?$/,
+  //   maxsize: 1e9,
+  //   endpoint: 'https://bioimagesuiteweb.github.io/unstableapp/viewer.html?image=$asset_url$',
+  // },
+  //
+  // {
+  //   name: 'MetaCell/NWBExplorer',
+  //   regex: /\.nwb$/,
+  //   maxsize: 1e9,
+  //   endpoint: 'http://nwbexplorer.opensourcebrain.org/nwbfile=$asset_url$',
+  // },
+  //
+  // {
+  //   name: 'VTK/ITK Viewer',
+  //   regex: /\.ome\.zarr$/,
+  //   maxsize: Infinity,
+  //   endpoint: 'https://kitware.github.io/itk-vtk-viewer/app/?gradientOpacity=0.3&image=$asset_url$',
+  // },
+  //
+  // {
+  //   name: 'OME Zarr validator',
+  //   regex: /\.ome\.zarr$/,
+  //   maxsize: Infinity,
+  //   endpoint: 'https://ome.github.io/ome-ngff-validator/?source=$asset_url$',
+  // },
+  // {
+  //   name: 'Neurosift',
+  //   regex: /\.nwb$/,
+  //   maxsize: Infinity,
+  //   endpoint: 'https://flatironinstitute.github.io/neurosift?p=/nwb&url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$', // eslint-disable-line max-len
+  // },
   {
-    name: 'Bioimagesuite/Viewer',
-    regex: /\.nii(\.gz)?$/,
-    maxsize: 1e9,
-    endpoint: 'https://bioimagesuiteweb.github.io/unstableapp/viewer.html?image=$asset_url$',
-  },
-
-  {
-    name: 'MetaCell/NWBExplorer',
-    regex: /\.nwb$/,
-    maxsize: 1e9,
-    endpoint: 'http://nwbexplorer.opensourcebrain.org/nwbfile=$asset_url$',
-  },
-
-  {
-    name: 'VTK/ITK Viewer',
-    regex: /\.ome\.zarr$/,
+    name: 'Neuroglancer',
+    regex: /\.(nwb|nii(\.gz)?|ome\.zarr)$/,
     maxsize: Infinity,
-    endpoint: 'https://kitware.github.io/itk-vtk-viewer/app/?gradientOpacity=0.3&image=$asset_url$',
-  },
-
-  {
-    name: 'OME Zarr validator',
-    regex: /\.ome\.zarr$/,
-    maxsize: Infinity,
-    endpoint: 'https://ome.github.io/ome-ngff-validator/?source=$asset_url$',
-  },
-
-  {
-    name: 'Neurosift',
-    regex: /\.nwb$/,
-    maxsize: Infinity,
-    endpoint: 'https://flatironinstitute.github.io/neurosift?p=/nwb&url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$', // eslint-disable-line max-len
+    endpoint: 'https://neuroglancer-stqaging.lincbrain.org$', // eslint-disable-line max-len
   },
 ];
 type Service = typeof EXTERNAL_SERVICES[0];
@@ -434,18 +439,17 @@ function getExternalServices(path: AssetPath, info: {dandisetId: string, dandise
   // dandisets (since the ready-made S3 URL will prevent access in that case).
   const assetUrl = embargoed.value ? assetDandiUrl : assetS3Url;
 
+  // LINC: Function modified, Neuroglancer should be the only allowable platform for viewing for now
   return EXTERNAL_SERVICES
-    .filter((service) => servicePredicate(service, path))
+    .filter((service) => service.name === 'Neuroglancer' && servicePredicate(service, path))
     .map((service) => ({
       name: service.name,
-      url: serviceURL(service.endpoint, {
-        dandisetId: info.dandisetId,
-        dandisetVersion: info.dandisetVersion,
-        assetUrl,
-        assetDandiUrl,
-        assetS3Url,
-      }),
+      url: formatForNeuroglancer(assetS3Url)
     }));
+}
+
+function formatForNeuroglancer(assetS3Url: string) {
+  return assetS3Url
 }
 
 function locationSlice(index: number) {
@@ -524,6 +528,7 @@ async function getItems() {
     .sort(sortByFolderThenName);
 
   // Assign values
+  console.log(items)
   items.value = extendedItems;
   updating.value = false;
 }

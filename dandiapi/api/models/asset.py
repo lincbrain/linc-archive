@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import os
 import datetime
 import re
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, quote_plus
+
 import uuid
+import json
 
 from django.conf import settings
 from django.contrib.postgres.indexes import HashIndex
@@ -84,12 +87,24 @@ class BaseAssetBlob(TimeStampedModel):
             digest['dandi:sha2-256'] = self.sha256
         return digest
 
-    @property
-    def s3_url(self) -> str:
+    def get_parsed_url(self) -> str:
         signed_url = self.blob.url
         # Strip off the query parameters from the presigning, as they are different every time
-        parsed = urlparse(signed_url)
+        return urlparse(signed_url)
+
+    @property
+    def s3_url(self) -> str:
+        parsed = self.get_parsed_url()
         return urlunparse((parsed[0], parsed[1], parsed[2], '', '', ''))
+
+    # @property
+    # def neuroglancer_url(self) -> str:
+    #     s3_object_key = self.get_parsed_url()[2]
+    #     last_slash_position = s3_object_key.rfind('/')
+    #     extracted_location_in_bucket = s3_object_key[last_slash_position + 1:]
+    #
+    #     base_neuroglancer_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
+    #     return f'{base_neuroglancer_url}/{extracted_location_in_bucket}'
 
     def __str__(self) -> str:
         return self.blob.name
@@ -232,6 +247,48 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
             return self.embargoed_blob.s3_url
         return self.zarr.s3_url
 
+    @property
+    def neuroglancer_url(self) -> str:
+        file_type_prefix = 'nifti'
+        if self.is_blob:
+            s3_url = self.blob.s3_url
+        elif self.is_embargoed_blob:
+            s3_url = self.embargoed_blob.s3_url
+        else:
+            s3_url = self.zarr.s3_url
+            file_type_prefix = 'zarr'
+
+        replacement_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
+        parts = s3_url.split('/')
+        cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
+        neuroglancer_compatible_source = f'{file_type_prefix}://{cloudfront_s3_location}'
+
+        base_url = f'{replacement_url}/cloudfront/frontend/index.html#!'
+        params = {
+            "dimensions": {"t": [1, "s"], "z": [0.000002564, "m"], "y": [0.000003625, "m"],
+                           "x": [0.000002564, "m"]},
+            "position": [0, 138308.5, 1024, 8787],
+            "crossSectionScale": 1,
+            "projectionScale": 524288,
+            "layers": [
+                {
+                    "type": "image",
+                    "source": neuroglancer_compatible_source,
+                    "localDimensions": {"c'": [1, ""]},
+                    "localPosition": [0],
+                    "tab": "source",
+                    "name": cloudfront_s3_location
+                }
+            ],
+            "selectedLayer": {"visible": True, "layer": cloudfront_s3_location},
+            "layout": "4panel"
+        }
+        import urllib
+        encoded_params = urllib.parse.quote(json.dumps(params, separators=(',', ':')))
+
+        return f"{base_url}{encoded_params}"
+
+
     def is_different_from(
         self,
         *,
@@ -286,6 +343,7 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
             'path': self.path,
             'identifier': str(self.asset_id),
             'contentUrl': [download_url, self.s3_url],
+            'neuroglancerUrl': self.neuroglancer_url,
             'contentSize': self.size,
             'digest': self.digest,
         }

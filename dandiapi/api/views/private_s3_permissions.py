@@ -27,7 +27,7 @@ def _replace_unsupported_chars(some_str):
         .replace("=", "_") \
         .replace("/", "~")
 
-
+# TODO: Extend this value to expire in a day or week or forever, check CloudFront constraints
 def _in_an_hour():
     """Returns a UTC POSIX timestamp for one hour in the future"""
     return int(time.time()) + (60*60)
@@ -62,7 +62,7 @@ def generate_policy_cookie(url):
     policy_dict = {
         "Statement": [
             {
-                "Resource": url,
+                "Resource": f'{url}/*',
                 "Condition": {
                     "DateLessThan": {
                         "AWS:EpochTime": _in_an_hour()
@@ -97,7 +97,8 @@ def generate_cookies(policy, signature):
 
 
 def generate_signed_cookies(key):
-    policy_json, policy_64 = generate_policy_cookie(os.getenv('CLOUDFRONT_NEUROGLANCER_URL'))
+    neuroglancer_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
+    policy_json, policy_64 = generate_policy_cookie(neuroglancer_url)
     signature = generate_signature(policy_json, key)
     return generate_cookies(policy_64, signature)
 
