@@ -5,6 +5,9 @@ import re
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 import uuid
+import json
+import urllib
+import os
 
 from django.conf import settings
 from django.contrib.postgres.indexes import HashIndex
@@ -38,6 +41,46 @@ ASSET_COMPUTED_FIELDS = [
     'datePublished',
     'publishedBy',
 ]
+
+def get_full_neuroglancer_url(asset_path):
+    print(f'{asset_path} AARON')
+    replacement_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
+    parts = asset_path.split('/')
+    file_type_prefix = parts[3]
+    cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
+
+    if file_type_prefix != 'zarr':
+        file_type_prefix = 'nifti'
+
+    return construct_neuroglancer_url(
+        f'{file_type_prefix}://{cloudfront_s3_location}',
+        parts[4],
+        replacement_url
+    )
+
+def construct_neuroglancer_url(source, layer_name, base_neuroglancer_url):
+    base_url = f'{base_neuroglancer_url}/cloudfront/frontend/index.html#!'
+    json_object = {
+        "layers": [
+            {
+                "type": "new",
+                "source": source,
+                "tab": "source",
+                "name": layer_name
+            }
+        ],
+        "selectedLayer": {
+            "visible": True,
+            "layer": layer_name
+        },
+        "layout": "4panel"
+    }
+
+    json_str = json.dumps(json_object)
+    encoded_json = urllib.parse.quote(json_str)
+    full_url = f"{base_url}{encoded_json}"
+
+    return full_url
 
 
 def validate_asset_path(path: str):
@@ -280,6 +323,12 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
             'asset-download',
             kwargs={'asset_id': str(self.asset_id)},
         )
+        neuroglancer_url = 'Not supported in neuroglancer'
+        try:
+            neuroglancer_url = get_full_neuroglancer_url(self.path)
+        except IndexError:
+            pass
+
         metadata = {
             **self.metadata,
             'id': self.dandi_asset_id(self.asset_id),
@@ -288,6 +337,7 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
             'contentUrl': [download_url, self.s3_url],
             'contentSize': self.size,
             'digest': self.digest,
+            'neuroglancerUrl': neuroglancer_url,
         }
         schema_version = metadata['schemaVersion']
         metadata['@context'] = (

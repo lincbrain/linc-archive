@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from dandiapi.api.storage import get_boto_client, get_storage
+from dandiapi.api.models.asset import get_full_neuroglancer_url
 from django.conf import settings
 
 
@@ -157,18 +158,7 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
     if not asset_path:
         response_data = {"message": "Cookies successfully generated"}
     else:
-        replacement_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
-        parts = asset_path.split('/')
-        file_type_prefix = parts[3]
-        cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
-
-        if file_type_prefix != 'zarr':
-            file_type_prefix = 'nifti'
-
-        complete_url = construct_neuroglancer_url(
-            f'{file_type_prefix}://{cloudfront_s3_location}',
-            parts[4]
-        )
+        complete_url = get_full_neuroglancer_url(asset_path)
 
         response_data = {
             "full_url": complete_url
