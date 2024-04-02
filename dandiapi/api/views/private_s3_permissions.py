@@ -122,6 +122,25 @@ def generate_cookies(policy, signature):
         "CloudFront-Key-Pair-Id": os.getenv('CLOUDFRONT_PEM_KEY_ID')
     }
 
+def get_complete_neuroglancer_url(asset_path):
+    pass
+    # replacement_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
+    # parts = asset_path.split('/')
+    # file_type_prefix = parts[3]
+    # cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
+    #
+    # if file_type_prefix != 'zarr':
+    #     file_type_prefix = 'nifti'
+    #
+    # complete_url = construct_neuroglancer_url(
+    #     f'{file_type_prefix}://{cloudfront_s3_location}',
+    #     parts[4]
+    # )
+    #
+    # response_data = {
+    #     "full_url": complete_url
+    # }
+
 
 def generate_signed_cookies(key):
     neuroglancer_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
@@ -157,21 +176,8 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
     if not asset_path:
         response_data = {"message": "Cookies successfully generated"}
     else:
-        replacement_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
-        parts = asset_path.split('/')
-        file_type_prefix = parts[3]
-        cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
-
-        if file_type_prefix != 'zarr':
-            file_type_prefix = 'nifti'
-
-        complete_url = construct_neuroglancer_url(
-            f'{file_type_prefix}://{cloudfront_s3_location}',
-            parts[4]
-        )
-
         response_data = {
-            "full_url": complete_url
+            "full_url": get_complete_neuroglancer_url(asset_path=asset_path)
         }
 
     response = Response(response_data)

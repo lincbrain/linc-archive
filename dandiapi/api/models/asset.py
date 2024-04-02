@@ -25,6 +25,7 @@ from dandiapi.api.storage import (
 
 from .dandiset import Dandiset
 from .version import Version
+# from ..views.private_s3_permissions import get_complete_neuroglancer_url
 
 ASSET_CHARS_REGEX = r'[A-z0-9(),&\s#+~_=-]'
 ASSET_PATH_REGEX = rf'^({ASSET_CHARS_REGEX}?\/?\.?{ASSET_CHARS_REGEX})+$'
@@ -275,6 +276,10 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
         return f'dandiasset:{asset_id}'
 
     @property
+    def neuroglancer_url(self):
+        return get_complete_neuroglancer_url(self.path)
+
+    @property
     def full_metadata(self):
         download_url = settings.DANDI_API_URL + reverse(
             'asset-download',
@@ -288,6 +293,7 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
             'contentUrl': [download_url, self.s3_url],
             'contentSize': self.size,
             'digest': self.digest,
+            'neuroglancerUrl': self.neuroglancer_url,
         }
         schema_version = metadata['schemaVersion']
         metadata['@context'] = (
