@@ -71,7 +71,6 @@ Does not resolve rendering issue. Would resolve accessing the asset in Jupyter N
 
 ### Integrate read-only credentials for S3 bucket into LINC Archive, LINC CLI
 
-#### CloudFront distribution with Origin Access Identity control for relevant S3 buckets
 
 
 Render with hosted Neuroglancer
