@@ -12,7 +12,7 @@ Use the `External Services` button in the `FileBrowser` to load a Neuroglancer v
 a single layer of the corresponding asset.  The resulting URL can be shared between LINC team members.  This use case extends the capabilities in the DANDI Archive to view assets in a private S3 bucket.
 
 ### Use case 2
-Set a single Neuroglancer viewer programmatically to visualize multiple assets (e.g. dMRI, HiP-CT) as layers.
+Set a single Neuroglancer viewer programmatically to visualize multiple assets (e.g. dMRI, HiP-CT) as layers.   See [example notebook](https://github.com/neuroscales/ngtools/blob/main/notebooks/show_tract.ipynb).
 
 ### Use case 3
 Use case 2 + Load the tractography-generated streamlines (i.e. `trk` file) into memory,
