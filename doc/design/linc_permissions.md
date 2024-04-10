@@ -17,7 +17,7 @@ Set a single Neuroglancer viewer programmatically to visualize multiple assets (
 ### Use case 3
 Use case 2 + Load the tractography-generated streamlines (i.e. `trk` file) into memory,
 convert the streamlines into the Neuroglancer skeleton format, and visualize in the Neuroglancer
-viewer as an additional layer.
+viewer as an additional layer.  See [example notebook](https://github.com/neuroscales/ngtools/blob/main/notebooks/show_tract.ipynb).
 
 ## Requirements
 
