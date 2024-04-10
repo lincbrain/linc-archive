@@ -92,15 +92,3 @@ objects at once as a user zooms, scrolls, etc., thus unless we generated a pre-s
 #### Netlify OAuth requirement to render site
 
 Would pass credentials to AWS.  Solves rendering issue, but does not solve accessing private S3 assets.
-
-#### Diagram
-
-```mermaid
-%%{init: {"flowchart": {"curve": "linear"}}}%%
-flowchart LR
-    E --> B
-    A(User) -->| If client has CloudFront cookies from prior session, <br/> then proceed. | B(Static Webpage i.e. Neuroglancer)
-    A --> | If client does not have CloudFront cookies, <br/> then GET upon /api/permissions/s3 in LINC Archive API. | E(LINC Archive API)
-    B --> | Upon user activity, <br/> sends presigned cookies | C(AWS CloudFront)
-    C -->| Allows data to be fetched | D(Private AWS S3 Bucket)
-    D -->| 1. Neuroglancer able to access S3 data <br/> 2. Data rendered on screen | B
