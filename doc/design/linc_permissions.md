@@ -3,7 +3,7 @@
 Collaborators: Aaron Kanzer, Kabilar Gunalan
 
 Outlined below are 3 use cases for visualizing private assets in Neuroglancer.
-In the current effort, requirements and a subsequent implementation will be developed for use cases 1 and 2.
+In the current effort, an implementation was developed for use cases 1 and 2.
 
 ## Use cases
 
