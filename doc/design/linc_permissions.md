@@ -73,7 +73,6 @@ Does not resolve rendering issue. Would resolve accessing the asset in Jupyter N
 
 #### CloudFront distribution with Origin Access Identity control for relevant S3 buckets
 
-- S3 Asset Bucket is served via a CloudFront distribution
 - User navigates to LINC Archive (i.e. `lincbrain.org`) to authenticate.  Thereby the user hits a get_presigned_cookie/ API endpoint. In the endpoint response is a valid cookie that allows the user's browser to be able to access the asset via their browser.
 
 Render with hosted Neuroglancer
