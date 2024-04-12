@@ -24,17 +24,9 @@ viewer as an additional layer.  See [example notebook](https://github.com/neuros
 1. Zarr archives are stored in a private AWS S3 bucket
 2. Provide direct access to the LINC users of the assets on the private S3 bucket using a URI.
 
-#### Relevant Links
-
-https://github.com/orgs/lincbrain/projects/2?pane=issue&itemId=54650571
-
-https://github.com/neuroscales/ngtools/blob/main/notebooks/show_tract.ipynb
-
-https://github.com/google/neuroglancer/issues/507
-
 ## Implemented solution
 
-- Summary: Integrate read-only credentials for S3 bucket into LINC Archive, LINC CLI. 
+- Summary: Integrate read-only credentials for S3 bucket into LINC Archive, LINC CLI.
  CloudFront distribution with Origin Access Identity control for relevant S3 buckets
 
 - S3 Asset Bucket is served via a CloudFront distribution
@@ -60,6 +52,7 @@ flowchart LR
     B --> | Upon user activity, <br/> sends presigned cookies | C(AWS CloudFront)
     C -->| Allows data to be fetched | D(Private AWS S3 Bucket)
     D -->| 1. Neuroglancer able to access S3 data <br/> 2. Data rendered on screen | B
+```
 
 ## Alternative options
 
