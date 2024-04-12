@@ -46,12 +46,12 @@ Architecture diagram
 ```mermaid
 %%{init: {"flowchart": {"curve": "linear"}}}%%
 flowchart LR
-    E --> B
-    A(User) -->| If client has CloudFront cookies from prior session, <br/> then proceed. | B(Static Webpage i.e. Neuroglancer)
-    A --> | If client does not have CloudFront cookies, <br/> then GET upon /api/permissions/s3 in LINC Archive API. | E(LINC Archive API)
-    B --> | Upon user activity, <br/> sends presigned cookies | C(AWS CloudFront)
-    C -->| Allows data to be fetched | D(Private AWS S3 Bucket)
-    D -->| 1. Neuroglancer able to access S3 data <br/> 2. Data rendered on screen | B
+    E(LINC Archive API) --> B(Static Webpage i.e. Neuroglancer)
+    A(User) -->|If client has CloudFront cookies from prior session, then proceed.| B
+    A --> |If client does not have CloudFront cookies, then GET upon /api/permissions/s3 in LINC Archive API.| E
+    B --> |Upon user activity, sends presigned cookies| C(AWS CloudFront)
+    C -->|Allows data to be fetched| D(Private AWS S3 Bucket)
+    D -->|1. Neuroglancer able to access S3 data<br>2. Data rendered on screen| B
 ```
 
 ## Alternative options
@@ -63,9 +63,6 @@ See discussion with Neuroglancer team in [Issue 507](https://github.com/google/n
 Does not resolve rendering issue. Would resolve accessing the asset in Jupyter Notebook, but would require flaky Python code.
 
 ### Integrate read-only credentials for S3 bucket into LINC Archive, LINC CLI
-
-
-
 
 
 #### AWS Cognito, npm AWS SDK package
