@@ -46,12 +46,12 @@ Architecture diagram
 ```mermaid
 %%{init: {"flowchart": {"curve": "linear"}}}%%
 flowchart LR
-    E(LINC Archive API) --> B(Static Webpage i.e. Neuroglancer)
-    A(User) -->|If client has CloudFront cookies from prior session, then proceed.| B
-    A --> |If client does not have CloudFront cookies, then GET upon /api/permissions/s3 in LINC Archive API.| E
-    B --> |Upon user activity, sends presigned cookies| C(AWS CloudFront)
-    C -->|Allows data to be fetched| D(Private AWS S3 Bucket)
-    D -->|1. Neuroglancer able to access S3 data<br>2. Data rendered on screen| B
+    E(LINC Archive API) --> B(Static Webpage i.e. Neuroglancer);
+    A(User) -->|If client has CloudFront cookies from prior session, then proceed.| B;
+    A --> |If client does not have CloudFront cookies, then GET upon /api/permissions/s3 in LINC Archive API.| E;
+    B --> |Upon user activity, sends presigned cookies| C(AWS CloudFront);
+    C -->|Allows data to be fetched| D(Private AWS S3 Bucket);
+    D -->|1. Neuroglancer able to access S3 data<br>2. Data rendered on screen| B;
 ```
 
 ## Alternative options
