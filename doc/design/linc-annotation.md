@@ -28,7 +28,7 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 4. Annotate branching axon bundles
 5. Store two annotations for a subset of axon bundles
 6. Annotate 1-3 unique axon bundles per slice
-7. Augment labeled datasets
+7. Team-based augmentation of labeled datasets
 8. Add landmarks
 9. Pixel-wise classifier (i.e. trace individual axons)
 10. Create other labels used to evaluate automated methods - Need to specify further.
