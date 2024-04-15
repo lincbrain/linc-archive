@@ -1,0 +1,49 @@
+# Add manual annotation tool for the LINC Project
+
+Outlined in this document are the manual annotation use cases for the 5 year LINC project.
+As additional use cases and requirements are defined they will be added in follow up design documents.
+
+## Use cases 
+
+### Use case 1 - Manual annotation of axon bundles
+
+Outline axon bundles on 2D slices to create volumetric segmentations.  For example segmentations see [Sundaresan et al., bioRxiv 2023](https://doi.org/10.1101/2023.09.30.560310).
+
+Annotation of axon bundles will occur in the following data modalities:
+1. Optical microscopy of histological sections of axon tracers
+2. Light-sheet microscopy (LSM) sections of axonal markers
+3. Hierarchical Phase-Contrast Tomography (HiP-CT)
+
+### Use case 2 - Manual annotation of individual axons
+
+Pixel-wise classifier of micro-CT images.
+
+Similar segmentations were previously performed on electron microscopy (EM) images.  Labels were created for artifacts, myelin, intracellular spaces, and extracellular spaces.  These manual segmentations were performed in FslView and saved in NIfTI files.  The manuscript for this work is currently being prepared.
+
+## Requirements
+
+1. Cloud-based manual annotation tool
+2. Annotation tool should integrate with centralized data on AWS S3
+3. Annotate axon bundles
+4. Annotate branching axon bundles
+5. Store two annotations for a subset of axon bundles
+6. Annotate 1-3 unique axon bundles per slice
+7. Augment labeled datasets
+8. Add landmarks
+9. Pixel-wise classifier (i.e. trace individual axons)
+10. Create other labels used to evaluate automated methods
+11. Make annotations available for dissemination
+
+## Open questions
+
+1. What storage format should be used for the two different annotation types?  Zarr?
+
+## Possible solutions
+
+### Neuroglancer
+
+### NeuroTrALE
+
+### WEBKNOSSOS
+
+### CAVE
