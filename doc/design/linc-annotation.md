@@ -31,7 +31,7 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 7. Augment labeled datasets
 8. Add landmarks
 9. Pixel-wise classifier (i.e. trace individual axons)
-10. Create other labels used to evaluate automated methods
+10. Create other labels used to evaluate automated methods - Need to specify further.
 11. Make annotations available for dissemination
 
 ## Open questions
