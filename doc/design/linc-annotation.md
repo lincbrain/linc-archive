@@ -37,7 +37,7 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 ## Open questions
 
 1. What storage format should be used for the two different annotation types?  Zarr?
-
+2. How are the annotations stored?  In a bucket or database within the container?
 ## Possible solutions
 
 ### Neuroglancer
