@@ -31,8 +31,11 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 7. Team-based augmentation of labeled datasets
 8. Add landmarks
 9. Pixel-wise classifier (i.e. trace individual axons)
-10. Create other labels used to evaluate automated methods - Need to specify further.
-11. Make annotations available for dissemination
+10. Interpolate pixel-wise segmentations between slices
+11. Create other labels used to evaluate automated methods - Need to specify further.
+12. Make annotations available for dissemination
+13. Visualize streamlines
+14. Filter streamlines that pass through a region of interest
 
 ## Open questions
 
