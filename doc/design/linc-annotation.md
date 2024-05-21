@@ -62,12 +62,28 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 
 ### WEBKNOSSOS
 References
+- [Docs](https://docs.webknossos.org/webknossos/index.html)
 - Web application - [Source code](https://github.com/scalableminds/webknossos)
 - Python API - [Source code](https://github.com/scalableminds/webknossos-libs) and [docs](https://docs.webknossos.org/webknossos-py/)
 - REST API is deprecated
+
+Volume annotations
+- [Docs](https://docs.webknossos.org/webknossos/volume_annotation.html)
+- Summary - Voxel-wise segmentation
+- [Supported data formats](https://docs.webknossos.org/webknossos/data_formats.html): WKW, OME-Zarr/NGFF, Precomputed, N5, Image Stacks
+- "The WEBKNOSSOS-wrap (WKW) container format is used for all internal voxel data representations - both for the raw (microscopy) image datasets and segmentations."
+
 Skeleton annotations
-- Draw line segments with branching
-- Stored in [NML file format](https://docs.webknossos.org/webknossos/data_formats.html#nml-files)
+- [Docs](https://docs.webknossos.org/webknossos/skeleton_annotation.html)
+- Summary - Draw line segments with branching
+- Supported data format: [NML file format](https://docs.webknossos.org/webknossos/data_formats.html#nml-files)
+
+Proof of concept deployment
+- User management on webknossos app is independent from lincbrain.org.
+- Vendor accounts
+    - [Docker Hub](https://hub.docker.com/u/lincbrain])
+    - CircleCI
+- POC available at https://webknossos-staging.lincbrain.org/
 
 #### Open questions
 
