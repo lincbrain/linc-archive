@@ -38,10 +38,6 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 14. Filter streamlines that pass through a region of interest
 15. View multiple imaging layers in the same view
 
-## Open questions
-
-1. What storage format should be used for the two different annotation types?  Zarr?
-2. How are the annotations stored?  In a bucket or database within the container?
 ## Possible solutions
 
 ### Neuroglancer
@@ -61,5 +57,14 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 - Last updated in May 2022
 
 ### WEBKNOSSOS
+References
+- Web application - [Source code](https://github.com/scalableminds/webknossos)
+- Python API - [Source code](https://github.com/scalableminds/webknossos-libs) and [docs](https://docs.webknossos.org/webknossos-py/)
+- REST API is deprecated
+Skeleton annotations
+- Draw line segments with branching
+- Stored in [NML file format](https://docs.webknossos.org/webknossos/data_formats.html#nml-files)
+
+#### Open questions
 
 ### CAVE
