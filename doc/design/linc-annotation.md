@@ -1,6 +1,7 @@
 # Add manual annotation tool for the LINC Project
 
 Outlined in this document are the manual annotation use cases for the 5 year LINC project.
+With the information at hand, we will select and deploy an annotation framework.
 As additional use cases and requirements are defined they will be added in follow up design documents.
 
 ## Use cases 
