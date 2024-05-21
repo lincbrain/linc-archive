@@ -56,6 +56,10 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 - Input image and label volumes, and output label volumes should be in NIfTI format
 - Last updated in May 2022
 
+### Open questions
+
+- Has SmartInterpol been integrated with Neuroglancer or NeuroTrALE?
+
 ### WEBKNOSSOS
 References
 - Web application - [Source code](https://github.com/scalableminds/webknossos)
