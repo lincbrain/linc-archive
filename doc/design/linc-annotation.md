@@ -36,6 +36,7 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 12. Make annotations available for dissemination
 13. Visualize streamlines
 14. Filter streamlines that pass through a region of interest
+15. View multiple imaging layers in the same view
 
 ## Open questions
 
