@@ -48,6 +48,14 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 
 ### NeuroTrALE
 
+### SmartInterpol
+
+- Summary - "Smart Interpol is a semi-automated segmentation tool which, starting from a volume with a sparse subset of manually labelled slices, estimates the corresponding dense segmentation in an automated fashion."
+- Source code - https://github.com/aleatzeni/SmartInterpol
+- MATLAB-based package
+- Input image and label volumes, and output label volumes should be in NIfTI format
+- Last updated in May 2022
+
 ### WEBKNOSSOS
 
 ### CAVE
