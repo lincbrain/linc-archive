@@ -46,6 +46,10 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 
 ### Neuroglancer
 
+- Web-based, mutli-scale volumetric data visualization
+- Source code - https://github.com/google/neuroglancer
+- Does not natively include features for voxel-wise segmentation or annotation management.
+
 ### NeuroTrALE
 
 ### SmartInterpol
