@@ -7,7 +7,7 @@ As additional use cases and requirements are defined they will be added in follo
 
 ### Use case 1 - Manual annotation of axon bundles
 
-Outline axon bundles on 2D slices to create volumetric segmentations.  For example segmentations see [Sundaresan et al., bioRxiv 2023](https://doi.org/10.1101/2023.09.30.560310).
+Outline axon bundles on 2D slices to create volumetric segmentations.  For example segmentations see [Sundaresan et al., bioRxiv 2023](https://doi.org/10.1101/2023.09.30.560310) which were generated in Neurolucida.
 
 Annotation of axon bundles will occur in the following data modalities:
 1. Optical microscopy of histological sections of axon tracers
