@@ -92,7 +92,7 @@ Pricing
 - [Plans](https://webknossos.org/pricing#compare-plans)
 - [Features for each plan](https://webknossos.org/pricing#custom-4)
 
-Proof of concept deployment notes
+Proof of concept notes
 - POC available at https://webknossos-staging.lincbrain.org/
 - User management on webknossos app is independent from lincbrain.org.
 - Set up vendor accounts
@@ -100,24 +100,26 @@ Proof of concept deployment notes
     - CircleCI
 - Local deployment provides faster iteration of testing changes rather than deploying Docker containers via CircleCI pipeline
 - AWS credentials are not encrypted in requests, fortunately SSL present, sent over HTTP/2
-
+- Making webknossos instance a “LINC Archive” User so that a valid API Key exists
 
 #### Open questions
 
 1. Deployment
     1. *The EC2 instance type is prescribed by the documentation.  Does WebKNOSSOS have auto-scaling set up? ECS?
-    1. *Does webknossos provide monitoring of backend resources? Does it rely on AWS-based metrics with alerts or another mechansim?
-    1. For local deployment, React/TS is not recognized by Chrome browser extensions
+    2. *Does webknossos provide monitoring of backend resources? Does it rely on AWS-based metrics with alerts or another mechansim?
+    3. Blue/green deployments? Canary releases? Noticed API versioning....
+    4. CircleCI consistently fails on "Build webknossos docker image" unless target/is invoked locally first
+    5. For local deployment, unable to render remote assets (e.g. Public Zarr asset on S3)
+    6. For local deployment, React/TS is not recognized by Chrome browser extensions
 
 1. Application
-    1. *How are the annotations backed up?
     1. When fetching assets from S3, why is the server called? Why not just retrieve from S3 directly?
+    2. Is there support for visualizing NIfTI files?
+    3. *How are annotations stored?  In the database within the container? 
+    4. *How are annotations versioned?
+    5. *How are the annotations backed up?
+    6. *Since a `Reload` can be performed on a `Dataset`, how does a user know that a given annotation corresponds a specific version of the imaging data?
 
-1. Data management
-    1. *How are annotation files stored?  In the database within the container? 
-    1. Is there support for NIfTI files?
-1. User interface
-    1. Dataset and annotation versioning
 1. Custom development
     1. What would it look like to set up a contract for custom development that we may need on the WEBKNOSSOS backend or frontend?
 
