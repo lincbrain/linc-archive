@@ -62,15 +62,24 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 - Has SmartInterpol been integrated with Neuroglancer or NeuroTrALE?
 
 ### WEBKNOSSOS
+
 References
+- [Homepage](https://weblium.webknossos.org/)
 - [Docs](https://docs.webknossos.org/webknossos/index.html)
-- Web application - [Source code](https://github.com/scalableminds/webknossos)
-- Python API - [Source code](https://github.com/scalableminds/webknossos-libs) and [docs](https://docs.webknossos.org/webknossos-py/)
+- Web application
+    - [Source code](https://github.com/scalableminds/webknossos)
+- Python API
+    - [Source code](https://github.com/scalableminds/webknossos-libs)
+    - [Docs](https://docs.webknossos.org/webknossos-py/)
 - REST API is deprecated
 
 Volume annotations
 - [Docs](https://docs.webknossos.org/webknossos/volume_annotation.html)
 - Summary - Voxel-wise segmentation
+- Features
+    - Brush tool
+    - Interpolation between slices
+    - AI-based quick-select tool with a bounding box. Not available in open-source version.
 - [Supported data formats](https://docs.webknossos.org/webknossos/data_formats.html): WKW, OME-Zarr/NGFF, Precomputed, N5, Image Stacks
 - "The WEBKNOSSOS-wrap (WKW) container format is used for all internal voxel data representations - both for the raw (microscopy) image datasets and segmentations."
 
@@ -79,13 +88,37 @@ Skeleton annotations
 - Summary - Draw line segments with branching
 - Supported data format: [NML file format](https://docs.webknossos.org/webknossos/data_formats.html#nml-files)
 
-Proof of concept deployment
+Pricing
+- [Plans](https://webknossos.org/pricing#compare-plans)
+- [Features for each plan](https://webknossos.org/pricing#custom-4)
+
+Proof of concept deployment notes
+- POC available at https://webknossos-staging.lincbrain.org/
 - User management on webknossos app is independent from lincbrain.org.
-- Vendor accounts
+- Set up vendor accounts
     - [Docker Hub](https://hub.docker.com/u/lincbrain])
     - CircleCI
-- POC available at https://webknossos-staging.lincbrain.org/
+- Local deployment provides faster iteration of testing changes rather than deploying Docker containers via CircleCI pipeline
+- AWS credentials are not encrypted in requests, fortunately SSL present, sent over HTTP/2
+
 
 #### Open questions
+
+1. Deployment
+    1. *The EC2 instance type is prescribed by the documentation.  Does WebKNOSSOS have auto-scaling set up? ECS?
+    1. *Does webknossos provide monitoring of backend resources? Does it rely on AWS-based metrics with alerts or another mechansim?
+    1. For local deployment, React/TS is not recognized by Chrome browser extensions
+
+1. Application
+    1. *How are the annotations backed up?
+    1. When fetching assets from S3, why is the server called? Why not just retrieve from S3 directly?
+
+1. Data management
+    1. *How are annotation files stored?  In the database within the container? 
+    1. Is there support for NIfTI files?
+1. User interface
+    1. Dataset and annotation versioning
+1. Custom development
+    1. What would it look like to set up a contract for custom development that we may need on the WEBKNOSSOS backend or frontend?
 
 ### CAVE
