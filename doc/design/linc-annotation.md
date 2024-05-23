@@ -67,6 +67,7 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 References
 - [Homepage](https://weblium.webknossos.org/)
 - [Docs](https://docs.webknossos.org/webknossos/index.html)
+- [Roadmap](https://webknossos.org/roadmap)
 - Web application
     - [Source code](https://github.com/scalableminds/webknossos)
 - Python API
@@ -92,6 +93,13 @@ Skeleton annotations
 Pricing
 - [Plans](https://webknossos.org/pricing#compare-plans)
 - [Features for each plan](https://webknossos.org/pricing#custom-4)
+
+Application notes
+- Annotations
+    - Stored in [FossilDB](https://github.com/scalableminds/fossildb), which is a key-value store that is built on RocksDB.
+    - Annotations can be accessed using the webknossos Python API, but should not be accessed directly through the FossilDB CLI.  The Python API will return the volume annotations (as a Zarr), the skeleton annotations, or bounding boxes.
+    - Annotations can be backed up by taking a snapshot of the database using the [FossilDB CLI](https://github.com/scalableminds/fossildb?tab=readme-ov-file#installation--usage).
+    - Annotations are versioned but each version is not available through the Python API.
 
 Proof of concept notes
 - POC available at https://webknossos-staging.lincbrain.org/
