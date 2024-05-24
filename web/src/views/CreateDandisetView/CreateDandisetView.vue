@@ -73,49 +73,49 @@
           dense
           class="my-4"
         />
-        <div v-if="!embargoed">
-          <div class="text-h4">
-            License
-          </div>
-          <div>
-            Select a license under which to share the contents of this Dataset.
-            You can learn more about <a
-              href="https://www.dandiarchive.org/handbook/35_data_licenses/"
-              target="_blank"
-              rel="noopener"
-            >
-              licenses for datasets
-            </a>.
-          </div>
-          <v-select
-            v-model="license"
-            :items="dandiLicenses"
-            label="License"
-            class="my-4"
-            outlined
-            dense
-          />
-        </div>
-        <div v-else>
-          <div class="text-h4">
-            NIH Award Number
-          </div>
-          <div>
-            Provide an NIH award number for this embargoed Dataset. Note: this
-            can be changed at any time and additional award numbers can be added
-            later.
-          </div>
-          <v-text-field
-            v-model="awardNumber"
-            label="Award number"
-            :counter="120"
-            :required="embargoed"
-            outlined
-            dense
-            class="my-4"
-            :rules="awardNumberRules"
-          />
-        </div>
+<!--        <div v-if="!embargoed">-->
+<!--          <div class="text-h4">-->
+<!--            License-->
+<!--          </div>-->
+<!--          <div>-->
+<!--            Select a license under which to share the contents of this Dataset.-->
+<!--            You can learn more about <a-->
+<!--              href="https://www.dandiarchive.org/handbook/35_data_licenses/"-->
+<!--              target="_blank"-->
+<!--              rel="noopener"-->
+<!--            >-->
+<!--              licenses for datasets-->
+<!--            </a>.-->
+<!--          </div>-->
+<!--          <v-select-->
+<!--            v-model="license"-->
+<!--            :items="dandiLicenses"-->
+<!--            label="License"-->
+<!--            class="my-4"-->
+<!--            outlined-->
+<!--            dense-->
+<!--          />-->
+<!--        </div>-->
+<!--        <div v-else>-->
+<!--          <div class="text-h4">-->
+<!--            NIH Award Number-->
+<!--          </div>-->
+<!--          <div>-->
+<!--            Provide an NIH award number for this embargoed Dataset. Note: this-->
+<!--            can be changed at any time and additional award numbers can be added-->
+<!--            later.-->
+<!--          </div>-->
+<!--          <v-text-field-->
+<!--            v-model="awardNumber"-->
+<!--            label="Award number"-->
+<!--            :counter="120"-->
+<!--            :required="embargoed"-->
+<!--            outlined-->
+<!--            dense-->
+<!--            class="my-4"-->
+<!--            :rules="awardNumberRules"-->
+<!--          />-->
+<!--        </div>-->
         <small class="float-right font-weight-bold">All fields are required</small>
       </v-form>
     </v-card-text>
@@ -162,7 +162,7 @@ const store = useDandisetStore();
 
 const name = ref('');
 const description = ref('');
-const license = ref<LicenseType>();
+const license = ref<LicenseType>('spdx:CC0-1.0');
 const embargoed = ref(false);
 const awardNumber = ref('');
 const saveDisabled = computed(
@@ -193,7 +193,7 @@ async function registerDandiset() {
     name: name.value,
     description: description.value,
   };
-
+  
   if (license.value) {
     metadata.license = [license.value];
   }
