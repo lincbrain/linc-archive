@@ -1,5 +1,7 @@
 # Add manual annotation tool for the LINC Project
 
+Authors: Kabilar Gunalan, Aaron Kanzer
+
 Outlined in this document are the manual annotation use cases for the 5 year LINC project.
 With the information at hand, we will select and deploy an annotation framework.
 As additional use cases and requirements are defined they will be added in follow up design documents.
@@ -49,6 +51,12 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 - Does not natively include features for voxel-wise segmentation or annotation management.
 
 ### NeuroTrALE
+
+# NeuroTrALE Data Manager
+
+- [Source code](https://github.com/mit-ll/NeuroTrALE-data-manager)
+- The NeuroTrALE Data Manager is also referred to as the NeuroTrALE Precomputed Service.
+- "The NeuroTrALE Precomputed Service simply serves up existing imagery and annotations, and allows updating annotations. The imagery (image tiles) are ingested by using MIT's precomputed-tif tool, which takes a stack of tiff images and generates a directory tree of tiff files. Refer to https://github.com/chunglabmit/precomputed-tif."
 
 ### SmartInterpol
 
