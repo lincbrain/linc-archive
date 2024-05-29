@@ -141,3 +141,22 @@ Proof of concept notes
     1. What would it look like to set up a contract for custom development that we may need on the WEBKNOSSOS backend or frontend?
 
 ### CAVE
+## Alternative annotation tools
+
+The following tools have been evaluated against the LINC use cases and requirements, and will not be implemented for the LINC project.
+
+### HortaCloud
+
+Summary
+
+Annotation platform from the Janelia Research Campus.  The cloud-based platform allows for visualization of large-scale 3D microscopy data and creating skeletons of neurons by manually annotating points in 3D space.
+
+References
+
+1. [Homepage](https://hortacloud.janelia.org/)
+1. [Docs](https://hortacloud.janelia.org/docs/)
+1. [Source code](https://github.com/JaneliaSciComp/hortacloud)
+
+Takeaway
+
+Does not provide for voxel-based segmentations.
