@@ -141,9 +141,17 @@ The following tools have been evaluated against the LINC use cases and requireme
 
 ### Neuroglancer
 
-- Web-based, mutli-scale volumetric data visualization
-- Source code - https://github.com/google/neuroglancer
-- Does not natively include features for voxel-wise segmentation or annotation management.
+Summary
+
+Web-based, multi-scale volumetric data visualization.
+
+References
+
+1. [Source code](https://github.com/google/neuroglancer)
+
+Takeaway
+
+Does not natively include features for voxel-based segmentation, data management, or user management.
 
 ### HortaCloud
 
