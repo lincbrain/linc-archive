@@ -44,12 +44,6 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 
 ## Possible solutions
 
-### Neuroglancer
-
-- Web-based, mutli-scale volumetric data visualization
-- Source code - https://github.com/google/neuroglancer
-- Does not natively include features for voxel-wise segmentation or annotation management.
-
 ### NeuroTrALE
 
 # NeuroTrALE Data Manager
@@ -144,6 +138,12 @@ Proof of concept notes
 ## Alternative annotation tools
 
 The following tools have been evaluated against the LINC use cases and requirements, and will not be implemented for the LINC project.
+
+### Neuroglancer
+
+- Web-based, mutli-scale volumetric data visualization
+- Source code - https://github.com/google/neuroglancer
+- Does not natively include features for voxel-wise segmentation or annotation management.
 
 ### HortaCloud
 
