@@ -44,26 +44,6 @@ Similar segmentations were previously performed on electron microscopy (EM) imag
 
 ## Possible solutions
 
-### NeuroTrALE
-
-# NeuroTrALE Data Manager
-
-- [Source code](https://github.com/mit-ll/NeuroTrALE-data-manager)
-- The NeuroTrALE Data Manager is also referred to as the NeuroTrALE Precomputed Service.
-- "The NeuroTrALE Precomputed Service simply serves up existing imagery and annotations, and allows updating annotations. The imagery (image tiles) are ingested by using MIT's precomputed-tif tool, which takes a stack of tiff images and generates a directory tree of tiff files. Refer to https://github.com/chunglabmit/precomputed-tif."
-
-### SmartInterpol
-
-- Summary - "Smart Interpol is a semi-automated segmentation tool which, starting from a volume with a sparse subset of manually labelled slices, estimates the corresponding dense segmentation in an automated fashion."
-- Source code - https://github.com/aleatzeni/SmartInterpol
-- MATLAB-based package
-- Input image and label volumes, and output label volumes should be in NIfTI format
-- Last updated in May 2022
-
-### Open questions
-
-- Has SmartInterpol been integrated with Neuroglancer or NeuroTrALE?
-
 ### WEBKNOSSOS
 
 References
@@ -133,11 +113,10 @@ Proof of concept notes
 
 1. Custom development
     1. What would it look like to set up a contract for custom development that we may need on the WEBKNOSSOS backend or frontend?
-
-### CAVE
+        
 ## Alternative annotation tools
 
-The following tools have been evaluated against the LINC use cases and requirements, and will not be implemented for the LINC project.
+The following tools have been evaluated against the LINC use cases and requirements, and will not be implemented for the LINC project based on the takeaways listed below.
 
 ### Neuroglancer
 
@@ -153,6 +132,75 @@ Takeaway
 
 Does not natively include features for voxel-based segmentation, data management, or user management.
 
+### NeuroTrALE
+
+Summary
+
+NeuroTrALE is a framework that allows for creating, storing, and editing annotations of line segments and polygons.  NeuroTrALE includes the segmentation algorithm (Axon Centerline Detection), data management system (NeuroTrALE Data Manager, also referred to as the NeuroTrALE Precomputed Service), and front-end visualization and editing interface that is built on Neuroglancer (NeuroTrALE UI).
+
+References
+
+- [UI Snapshot 1.4 source code](https://github.com/mit-ll/NeuroTrALE-ui/tree/1.4.0-SNAPSHOT)
+- [UI Snapshot 2.0 source code](https://github.com/mit-ll/NeuroTrALE-ui/tree/2.0.0-SNAPSHOT)
+- [Data manager source code](https://github.com/mit-ll/NeuroTrALE-data-manager)
+- [Axon centerline detection source code](https://github.com/mit-ll/axon-centerline-detection)
+
+Details
+
+1. The NeuroTrALE UI allows for creating polygons and line strings using control points.
+2. The NeuroTrALE Precomputed Service only works with [Precomputed TIFF Files](https://github.com/chunglabmit/precomputed-tif).
+3. Each imaging dataset is tied to a single set of annotation files.  See [Filesystem docs](https://github.com/mit-ll/NeuroTrALE-data-manager?tab=readme-ov-file#filesystem). 
+4. Multiple users can edit the annotations for a dataset simulatenously but the last user to save their annotations overwrites all other versions, thereby leading to a race condition.
+
+Future developments
+
+1. Integrate UI Snapshot 2.0 with the base Google Neuroglancer fork.
+2. Toolbar with command shortcuts
+
+Proof of concept
+
+
+
+Takeaways
+
+1. Does not include a feature for voxel-wise segmentations (Requirement 9).
+2. Does not allow for storing multiple annotations for a given dataset (Requirement 5).
+
+
+### Smart Interpol
+
+Summary
+
+"Smart Interpol is a semi-automated segmentation tool which, starting from a volume with a sparse subset of manually labelled slices, estimates the corresponding dense segmentation in an automated fashion."
+
+References
+
+1. [Source code](https://github.com/aleatzeni/SmartInterpol)
+1. [Atzeni et al., MICCAI 2018](https://link.springer.com/chapter/10.1007/978-3-030-00934-2_25)
+
+Details
+
+1. MATLAB-based package
+1. Input image and label volumes, and output label volumes should be in the NIfTI file format.
+1. Last updated in May 2002
+
+Takeaways
+
+1. Would need to be integrated with NeuroTrALE to interactively compute and render dense segmentations.
+
+### CAVE
+
+Summary
+
+References
+
+1. [Documentation](https://caveconnectome.github.io/CAVEclient/)
+1. [Source code](https://github.com/CAVEconnectome)
+1. [Dorkenwald et al. 2023](https://doi.org/10.1101/2023.07.26.550598)
+
+Takeaways
+
+
 ### HortaCloud
 
 Summary
@@ -165,6 +213,6 @@ References
 1. [Docs](https://hortacloud.janelia.org/docs/)
 1. [Source code](https://github.com/JaneliaSciComp/hortacloud)
 
-Takeaway
+Takeaways
 
-Does not provide for voxel-based segmentations.
+1. Does not include a feature for voxel-wise segmentations (Requirement 9).
