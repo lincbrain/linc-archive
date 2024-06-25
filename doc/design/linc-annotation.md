@@ -128,9 +128,9 @@ References
 
 1. [Source code](https://github.com/google/neuroglancer)
 
-Takeaway
+Takeaways
 
-Does not natively include features for voxel-based segmentation, data management, or user management.
+1. Does not natively include features for voxel-based segmentation, data management, or user management.
 
 ### NeuroTrALE
 
@@ -151,6 +151,7 @@ Details
 2. The NeuroTrALE Precomputed Service only works with [Precomputed TIFF Files](https://github.com/chunglabmit/precomputed-tif).
 3. Each imaging dataset is tied to a single set of annotation files.  See [Filesystem docs](https://github.com/mit-ll/NeuroTrALE-data-manager?tab=readme-ov-file#filesystem). 
 4. Multiple users can edit the annotations for a dataset simulatenously but the last user to save their annotations overwrites all other versions, thereby leading to a race condition.
+5. Currently deployed on Lincoln Lab servers for internal use, and MIT SuperCloud for the MIT Chung Lab and collaborators of the Chung Lab at the University of Florida.
 
 Future developments
 
@@ -200,6 +201,7 @@ References
 
 Takeaways
 
+1. Does not include a feature for voxel-wise segmentations (Requirement 9).
 
 ### HortaCloud
 
