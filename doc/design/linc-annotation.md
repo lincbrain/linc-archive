@@ -218,3 +218,15 @@ References
 Takeaways
 
 1. Does not include a feature for voxel-wise segmentations (Requirement 9).
+
+## Zooniverse
+
+Summary
+
+The Zooniverse team is currently working on their first implementation of a volumetric annotation tool in collaboration with the Center for Mesoscale Connectomics (CMC).  Their goal is to release this feature at the end of the CMC UM1 Year 2.  We will work with the Zooniverse and CMC teams to alpha/beta test this annotation tool as releases are made available over the course of this year.
+
+References
+
+1. [Homepage](https://www.zooniverse.org)
+1. [Zooniverse + CMC Presentation](https://docs.google.com/presentation/d/1Xl0AhVDM2z9mVE5IcnWMTXQRndk7K3WTrEbDjKvTYLM/edit#slide=id.g276e378112e_0_0)
+1. [Source code](https://github.com/zooniverse)
