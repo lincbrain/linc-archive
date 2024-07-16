@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from .asset import AssetViewSet, NestedAssetViewSet
-from .auth import auth_token_view, authorize_view, user_questionnaire_form_view
+from .auth import (
+    auth_token_view,
+    authorize_view,
+    user_questionnaire_form_view,
+)
 from .dandiset import DandisetViewSet
 from .dashboard import DashboardView, user_approval_view
 from .info import info_view
@@ -16,7 +20,6 @@ from .upload import (
 )
 from .users import users_me_view, users_search_view
 from .version import VersionViewSet
-
 
 __all__ = [
     'NestedAssetViewSet',
