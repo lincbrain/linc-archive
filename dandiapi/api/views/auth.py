@@ -98,7 +98,7 @@ class ExternalAPIViewset(viewsets.ViewSet):
             user = User.objects.get(email=user_detail_serializer.data["email"])
             webknossos_credential = user.metadata.webknossos_credential
             webknossos_api_url = os.getenv('WEBKNOSSOS_API_URL', "webknossos-r5.lincbrain.org")
-            external_endpoint = f'https://{webknossos_api_url}/api/auth/login'
+            external_endpoint = f'https://webknossos-r5.lincbrain.org/api/auth/login'
 
             payload = {
                 "email": user.email,
@@ -159,12 +159,14 @@ class ExternalAPIViewset(viewsets.ViewSet):
             asset_dict = {}
             for asset in Asset.objects.all():
                 asset_dict[asset.s3_uri] = asset.asset_id
+                print(asset_dict)
 
             for webknossos_dataset in webknossos_datasets.json():
                 try:
                     webknossos_dataset_data = requests.get(f'http://webknossos-r5.lincbrain.org:8080/binaryData/LINC/'
                                      f'{webknossos_dataset["name"]}/datasource-properties.json'
                                      ).json()
+                    print(webknossos_dataset_data)
                     webknossos_dataset = WebKnossosDataset.objects.get_or_create(
                         webknossos_dataset_name=webknossos_dataset_data['id']['name'],
                         webknossos_organization_name=webknossos_dataset_data['id']['team']
@@ -186,8 +188,12 @@ class ExternalAPIViewset(viewsets.ViewSet):
                                 webknossos_dataset=webknossos_dataset,
                                 asset=asset
                             )
+
                         except Exception as e:
                             print("S3 Asset Not found")
+
+                    del webknossos_dataset_data
+                    unique_paths.clear()
 
                 except JSONDecodeError:
                     continue
