@@ -321,7 +321,7 @@
                       <v-list-item
                         v-for="el in item.asset.webknossos_info"
                         :key="item.asset.s3_uri"
-                        @click="el ? handleWebKnossosClick(el.webknossos_url) : null"
+                        @click.stop="el ? handleWebKnossosClick(el.webknossos_url) : null"
                         :href="el.webknossos_url ? el.webknossos_url : null"
                         target="_blank"
                         rel="noreferrer"
@@ -357,7 +357,7 @@
                         <v-list-item
                           v-for="annotation in dataset.webknossos_annotations"
                           :key="annotation.webknossos_annotation_url"
-                          @click="annotation ? handleWebKnossosClick(annotation.webknossos_annotation_url) : null"
+                          @click.stop="annotation ? handleWebKnossosClick(annotation.webknossos_annotation_url) : null"
                           :href="annotation.webknossos_annotation_url ? annotation.webknossos_annotation_url : null"
                           target="_blank"
                           rel="noreferrer"
