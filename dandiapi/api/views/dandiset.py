@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Count, Max, OuterRef, Subquery, Sum
 from django.db.models.functions import Coalesce
 from django.db.models.query_utils import Q
@@ -24,7 +25,11 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from dandiapi.api.asset_paths import get_root_paths_many
 from dandiapi.api.mail import send_ownership_change_emails
 from dandiapi.api.models import Dandiset, Version
+<<<<<<< HEAD
 from dandiapi.api.permissions import IsApproved
+=======
+from dandiapi.api.services import audit
+>>>>>>> upstream/master
 from dandiapi.api.services.dandiset import create_dandiset, delete_dandiset
 from dandiapi.api.services.embargo import kickoff_dandiset_unembargo
 from dandiapi.api.services.embargo.exceptions import (
@@ -144,13 +149,13 @@ class DandisetViewSet(ReadOnlyModelViewSet):
                 # Only include dandisets that have assets in their most recent version.
                 most_recent_version = (
                     Version.objects.filter(dandiset=OuterRef('pk'))
-                    .order_by('created')
+                    .order_by('-created')
                     .annotate(asset_count=Count('assets'))[:1]
                 )
                 queryset = queryset.annotate(
-                    draft_asset_count=Subquery(most_recent_version.values('asset_count'))
+                    asset_count=Subquery(most_recent_version.values('asset_count'))
                 )
-                queryset = queryset.filter(draft_asset_count__gt=0)
+                queryset = queryset.filter(asset_count__gt=0)
             if not show_embargoed:
                 queryset = queryset.filter(embargo_status='OPEN')
         return queryset
@@ -414,9 +419,18 @@ class DandisetViewSet(ReadOnlyModelViewSet):
                         raise ValidationError(f'User {username} not found')
 
             # All owners found
-            owners = user_owners + [acc.user for acc in socialaccount_owners]
-            removed_owners, added_owners = dandiset.set_owners(owners)
-            dandiset.save()
+            with transaction.atomic():
+                owners = user_owners + [acc.user for acc in socialaccount_owners]
+                removed_owners, added_owners = dandiset.set_owners(owners)
+                dandiset.save()
+
+                if removed_owners or added_owners:
+                    audit.change_owners(
+                        dandiset=dandiset,
+                        user=request.user,
+                        removed_owners=removed_owners,
+                        added_owners=added_owners,
+                    )
 
             send_ownership_change_emails(dandiset, removed_owners, added_owners)
 
@@ -425,8 +439,13 @@ class DandisetViewSet(ReadOnlyModelViewSet):
             try:
                 owner_account = SocialAccount.objects.get(user=owner_user)
                 owner_dict = {'username': owner_account.extra_data['login']}
-                if 'name' in owner_account.extra_data:
-                    owner_dict['name'] = owner_account.extra_data['name']
+                owner_dict['name'] = owner_account.extra_data.get('name', None)
+                owner_dict['email'] = (
+                    owner_account.extra_data['email']
+                    # Only logged-in users can see owners' email addresses
+                    if request.user.is_authenticated and 'email' in owner_account.extra_data
+                    else None
+                )
                 owners.append(owner_dict)
             except SocialAccount.DoesNotExist:
                 # Just in case some users aren't using social accounts, have a fallback
@@ -434,6 +453,8 @@ class DandisetViewSet(ReadOnlyModelViewSet):
                     {
                         'username': owner_user.username,
                         'name': f'{owner_user.first_name} {owner_user.last_name}',
+                        'email': owner_user.email if request.user.is_authenticated else None,
                     }
                 )
+
         return Response(owners, status=status.HTTP_200_OK)

@@ -11,8 +11,10 @@ from more_itertools import chunked
 
 from dandiapi.api.mail import send_dandiset_unembargoed_message
 from dandiapi.api.models import AssetBlob, Dandiset, Version
+from dandiapi.api.services import audit
 from dandiapi.api.services.asset.exceptions import DandisetOwnerRequiredError
 from dandiapi.api.services.exceptions import DandiError
+from dandiapi.api.services.metadata import validate_version_metadata
 from dandiapi.api.storage import get_boto_client
 from dandiapi.api.tasks import unembargo_dandiset_task
 
@@ -63,7 +65,7 @@ def _remove_dandiset_asset_blob_embargo_tags(dandiset: Dandiset):
 
 
 @transaction.atomic()
-def unembargo_dandiset(ds: Dandiset):
+def unembargo_dandiset(ds: Dandiset, user: User):
     """Unembargo a dandiset by copying all embargoed asset blobs to the public bucket."""
     logger.info('Unembargoing Dandiset %s', ds.identifier)
     logger.info('\t%s assets', ds.draft_version.assets.count())
@@ -93,14 +95,22 @@ def unembargo_dandiset(ds: Dandiset):
     # Fetch version to ensure changed embargo_status is included
     # Save version to update metadata through populate_metadata
     v = Version.objects.select_for_update().get(dandiset=ds, version='draft')
+    v.status = Version.Status.PENDING
     v.save()
     logger.info('Version metadata updated')
+
+    # Pre-emptively validate version metadata, so that old validation
+    # errors don't show up once un-embargo is finished
+    validate_version_metadata(version=v)
+    logger.info('Version metadata validated')
 
     # Notify owners of completed unembargo
     send_dandiset_unembargoed_message(ds)
     logger.info('Dandiset owners notified.')
 
     logger.info('...Done')
+
+    audit.unembargo_dandiset(dandiset=ds, user=user)
 
 
 def remove_asset_blob_embargoed_tag(asset_blob: AssetBlob) -> None:
@@ -126,4 +136,4 @@ def kickoff_dandiset_unembargo(*, user: User, dandiset: Dandiset):
         Dandiset.objects.filter(pk=dandiset.pk).update(
             embargo_status=Dandiset.EmbargoStatus.UNEMBARGOING
         )
-        transaction.on_commit(lambda: unembargo_dandiset_task.delay(dandiset.pk))
+        transaction.on_commit(lambda: unembargo_dandiset_task.delay(dandiset.pk, user.id))

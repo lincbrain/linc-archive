@@ -22,7 +22,11 @@
             width="60%"
             class="white--text pl-2 py-1 text-left"
           >
+<<<<<<< HEAD
             <div>{{ downloadCommand }}</div>
+=======
+            <div>> {{ downloadCommand }}</div>
+>>>>>>> upstream/master
             <div>> cd {{ dandisetIdentifier }}</div>
             <div>> lincbrain organize &lt;source_folder&gt; -f dry</div>
             <div>> lincbrain organize &lt;source_folder&gt;</div>
@@ -54,6 +58,7 @@ import { useDandisetStore } from '@/stores/dandiset';
 const store = useDandisetStore();
 const dandisetIdentifier = computed(() => store.dandiset?.dandiset.identifier);
 
+<<<<<<< HEAD
 const downloadCommand = computed(() => {
   const baseUrl = import.meta.env.VITE_APP_DANDI_API_ROOT === 'https://staging-api.lincbrain.org/api/'
     ? 'https://staging.lincbrain.org/dandiset/'
@@ -62,6 +67,14 @@ const downloadCommand = computed(() => {
   return dandisetIdentifier.value
     ? `> lincbrain download ${baseUrl}${dandisetIdentifier.value}/draft`
     : ''; // Empty string just as a fallback in case store.dandiset? is undefined
+=======
+if (dandisetIdentifier.value === undefined) {
+  throw new Error('store.dandiset must be defined');
+}
+
+const downloadCommand = computed(() => {
+  return `dandi download ${window.location.origin}/dandiset/${dandisetIdentifier.value}/draft`
+>>>>>>> upstream/master
 });
 </script>
 

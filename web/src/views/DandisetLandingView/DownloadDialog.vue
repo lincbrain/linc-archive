@@ -120,6 +120,7 @@ import { computed, ref } from 'vue';
 import { useDandisetStore } from '@/stores/dandiset';
 import CopyText from '@/components/CopyText.vue';
 
+<<<<<<< HEAD
 function formatDownloadCommand(identifier: string, version: string): string {
   if (version === 'draft') {
     const baseUrl = import.meta.env.VITE_APP_DANDI_API_ROOT === 'https://staging-api.lincbrain.org/api/'
@@ -133,6 +134,18 @@ function formatDownloadCommand(identifier: string, version: string): string {
   }
 
   return `lincbrain download DANDI:${identifier}/${version}`;
+=======
+function downloadCommand(identifier: string, version: string): string {
+  // Use the special 'DANDI:' url prefix if appropriate.
+  const generalUrl = `${window.location.origin}/dandiset/${identifier}`;
+  const dandiUrl = `DANDI:${identifier}`;
+  const url = window.location.origin == 'https://dandiarchive.org' ? dandiUrl : generalUrl;
+
+  // Prepare a url suffix to specify a specific version (or not).
+  const versionPath = version ? `/${version}` : '';
+
+  return `dandi download ${url}${versionPath}`;
+>>>>>>> upstream/master
 }
 
 
@@ -153,7 +166,7 @@ const availableVersions = computed(
 );
 
 const defaultDownloadText = computed(
-  () => (identifier.value ? formatDownloadCommand(identifier.value, currentVersion.value) : ''),
+  () => (identifier.value ? downloadCommand(identifier.value, currentVersion.value) : ''),
 );
 
 const customDownloadText = computed(() => {
@@ -161,11 +174,11 @@ const customDownloadText = computed(() => {
     return '';
   }
   if (selectedDownloadOption.value === 'draft') {
-    return formatDownloadCommand(identifier.value, 'draft');
+    return downloadCommand(identifier.value, 'draft');
   } if (selectedDownloadOption.value === 'latest') {
-    return formatDownloadCommand(identifier.value, '');
+    return downloadCommand(identifier.value, '');
   } if (selectedDownloadOption.value === 'other') {
-    return formatDownloadCommand(
+    return downloadCommand(
       identifier.value,
       availableVersions.value[selectedVersion.value].version,
     );

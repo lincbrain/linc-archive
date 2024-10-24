@@ -37,6 +37,7 @@
           </template>
         </DownloadDialog>
       </v-row>
+<<<<<<< HEAD
 <!--      <v-row no-gutters>-->
 <!--        <CiteAsDialog>-->
 <!--          <template-->
@@ -63,6 +64,41 @@
 <!--          </template>-->
 <!--        </CiteAsDialog>-->
 <!--      </v-row>-->
+=======
+      <v-row
+        no-gutters
+      >
+        <CiteAsDialog>
+          <template
+            #activator="{ on }"
+          >
+            <v-btn
+              id="cite_as"
+              outlined
+              block
+              v-on="on"
+            >
+              <v-icon
+                color="primary"
+                left
+              >
+                mdi-format-quote-close
+              </v-icon>
+              <span>Cite As</span>
+              <v-spacer />
+              <v-icon right>
+                mdi-chevron-down
+              </v-icon>
+            </v-btn>
+          </template>
+        </CiteAsDialog>
+      </v-row>
+      <v-row
+        no-gutters
+      >
+        <ContactDialog />
+      </v-row>
+>>>>>>> upstream/master
     </div>
 
     <!-- Files and Metadata buttons -->
@@ -151,6 +187,7 @@ import { open as openMeditor } from '@/components/Meditor/state';
 import DownloadDialog from './DownloadDialog.vue';
 import CiteAsDialog from './CiteAsDialog.vue';
 import ShareDialog from './ShareDialog.vue';
+import ContactDialog from './ContactDialog.vue';
 
 const store = useDandisetStore();
 

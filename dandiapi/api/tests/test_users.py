@@ -34,6 +34,7 @@ def serialize_social_account(social_account):
     }
 
 
+<<<<<<< HEAD
 # TODO: linc-archive #14: Fix commented-out test
 # @pytest.mark.django_db()
 # def test_user_registration_email_content(
@@ -92,9 +93,68 @@ def serialize_social_account(social_account):
 #         format='json',
 #     )
 #     assert len(mailoutbox) == email_count
+=======
+@pytest.mark.django_db
+def test_user_registration_email_content(
+    social_account: SocialAccount, mailoutbox: list[EmailMessage], api_client: APIClient
+):
+    user = social_account.user
+    social_account.user.metadata.status = UserMetadata.Status.INCOMPLETE  # simulates new user
+
+    api_client.force_authenticate(user=user)
+    api_client.post(
+        '/api/users/questionnaire-form/',
+        {f'question_{i}': f'answer_{i}' for i in range(len(QUESTIONS))},
+        format='json',
+    )
+
+    assert len(mailoutbox) == 2
+
+    email = mailoutbox[0]
+    assert email.subject == f'DANDI: New user registered: {user.email}'
+    assert email.to == [ADMIN_EMAIL, user.email]
+    assert '<p>' not in email.body
+    assert all(len(_) < 100 for _ in email.body.splitlines())
+
+    email = mailoutbox[1]
+    assert email.subject == f'DANDI: Review new user: {user.username}'
+    assert email.to == [ADMIN_EMAIL]
+    assert '<p>' not in email.body
+    assert all(len(_) < 100 for _ in email.body.splitlines())
 
 
-@pytest.mark.django_db()
+@pytest.mark.parametrize(
+    ('status', 'email_count'),
+    [
+        # INCOMPLETE users POSTing to the questionnaire endpoint should result in 2 emails
+        # being sent (new user welcome email, admin "needs approval" email), while no email should
+        # be sent in the case of APPROVED/PENDING users
+        (UserMetadata.Status.INCOMPLETE, 2),
+        (UserMetadata.Status.PENDING, 0),
+        (UserMetadata.Status.APPROVED, 0),
+    ],
+)
+@pytest.mark.django_db
+def test_user_registration_email_count(
+    social_account: SocialAccount,
+    mailoutbox: list[EmailMessage],
+    api_client: APIClient,
+    status: str,
+    email_count: int,
+):
+    user = social_account.user
+    user.metadata.status = status
+    api_client.force_authenticate(user=user)
+    api_client.post(
+        '/api/users/questionnaire-form/',
+        {f'question_{i}': f'answer_{i}' for i in range(len(QUESTIONS))},
+        format='json',
+    )
+    assert len(mailoutbox) == email_count
+>>>>>>> upstream/master
+
+
+@pytest.mark.django_db
 def test_user_me(api_client, social_account):
     api_client.force_authenticate(user=social_account.user)
 
@@ -104,7 +164,7 @@ def test_user_me(api_client, social_account):
     ).data == serialize_social_account(social_account)
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_me_admin(api_client, admin_user, social_account_factory):
     api_client.force_authenticate(user=admin_user)
     social_account = social_account_factory(user=admin_user)
@@ -116,7 +176,7 @@ def test_user_me_admin(api_client, admin_user, social_account_factory):
     ).data == serialize_social_account(social_account)
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_search(api_client, social_account, social_account_factory):
     api_client.force_authenticate(user=social_account.user)
 
@@ -132,7 +192,7 @@ def test_user_search(api_client, social_account, social_account_factory):
     ).data == [serialize_social_account(social_account)]
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_search_prefer_social(api_client, user_factory, social_account):
     api_client.force_authenticate(user=social_account.user)
 
@@ -153,7 +213,7 @@ def test_user_search_prefer_social(api_client, user_factory, social_account):
     ).data == [user_to_dict(user)]
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_search_blank_username(api_client, user):
     api_client.force_authenticate(user=user)
 
@@ -167,7 +227,7 @@ def test_user_search_blank_username(api_client, user):
     )
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_search_no_matches(api_client, user):
     api_client.force_authenticate(user=user)
 
@@ -181,7 +241,7 @@ def test_user_search_no_matches(api_client, user):
     )
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_search_multiple_matches(api_client, user, user_factory, social_account_factory):
     api_client.force_authenticate(user=user)
 
@@ -204,7 +264,7 @@ def test_user_search_multiple_matches(api_client, user, user_factory, social_acc
     ).data == [serialize_social_account(social_account) for social_account in social_accounts[:3]]
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_search_limit_enforced(api_client, user, user_factory, social_account_factory):
     api_client.force_authenticate(user=user)
 
@@ -221,7 +281,7 @@ def test_user_search_limit_enforced(api_client, user, user_factory, social_accou
     ]
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_search_extra_data(api_client, user, social_account, social_account_factory):
     """Test that searched keyword isn't caught by a different field in `extra_data`."""
     api_client.force_authenticate(user=user)
@@ -283,7 +343,7 @@ def test_user_search_extra_data(api_client, user, social_account, social_account
         ),
     ],
 )
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_user_status(
     api_client: APIClient,
     user: User,
@@ -316,7 +376,7 @@ def test_user_status(
     assert response.data == expected_search_results_value
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     ('questions', 'querystring', 'expected_status_code'),
     [
@@ -338,7 +398,7 @@ def test_user_questionnaire_view(
         assertContains(resp, question['question'])
 
 
-@pytest.mark.django_db()
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     ('email', 'expected_status'),
     [

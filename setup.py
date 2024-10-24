@@ -40,7 +40,13 @@ setup(
     include_package_data=True,
     install_requires=[
         'celery',
+<<<<<<< HEAD
         'dandischema~=0.10.1',
+=======
+        'dandi',
+        # Pin dandischema to exact version to make explicit which schema version is being used
+        'dandischema==0.10.2',  # schema version 0.6.8
+>>>>>>> upstream/master
         'django~=4.1.0',
         'django-admin-display',
         # Require 0.58.0 as it is the first version to support postgres' native
@@ -58,6 +64,7 @@ setup(
         'djangorestframework-yaml',
         'drf-extensions',
         'drf-yasg',
+        'fsspec[http]',
         'jsonschema',
         'boto3[s3]',
         'more_itertools',
