@@ -189,10 +189,9 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
         response.set_cookie(
             key=cookie_name,
             value=cookie_value,
-            secure=True,  # Required for HTTPS
-            httponly=True,  # Prevents JavaScript access in production
-            samesite="Lax",
-            domain=".lincbrain.org"  # Covers all subdomains
+            secure=True,
+            httponly=True,
+            domain=f".{os.getenv('CLOUDFRONT_BASE_URL')}"
         )
 
     return response
