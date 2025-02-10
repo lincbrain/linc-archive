@@ -124,6 +124,28 @@ def generate_signed_cookies(key):
     return generate_cookies(policy_64, signature)
 
 
+def get_cookie_settings(request):
+    """Determine secure cookie settings based on request origin."""
+    origin = request.headers.get("Origin", "")
+
+    # Localhost setup (disable Secure)
+    if "localhost" in origin or "127.0.0.1" in origin:
+        return {
+            "secure": False,  # localhost does not support secure cookies
+            "httponly": False,  # Allows JavaScript access (optional, depends on frontend needs)
+            "samesite": "Lax",  # Prevents CSRF while allowing GET requests
+            "domain": None  # Host-only cookie (works only for localhost)
+        }
+
+    # Production setup (secure)
+    return {
+        "secure": True,  # Requires HTTPS in production
+        "httponly": True,  # Blocks JavaScript access to cookies (prevents XSS attacks)
+        "samesite": "Lax",  # Prevents CSRF while allowing cross-subdomain cookies
+        "domain": ".lincbrain.org"  # Allows subdomain-wide authentication
+    }
+
+
 if TYPE_CHECKING:
     from django.http.response import HttpResponseBase
     from rest_framework.request import Request
@@ -170,17 +192,20 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
 
     response = Response(response_data)
     response['Access-Control-Allow-Credentials'] = 'true'
-    response['Access-Control-Allow-Origin'] = request.headers.get('Origin', 'https://lincbrain.org')
+    response['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
     response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'  # Adjust as needed
     response['Access-Control-Allow-Headers'] = 'X-Requested-With, Content-Type'  # Adjust as needed
+
+    cookie_settings = get_cookie_settings(request)
 
     for cookie_name, cookie_value in cookies.items():
         response.set_cookie(
             key=cookie_name,
             value=cookie_value,
-            secure=True,
-            httponly=True,
-            domain=f".{os.getenv('CLOUDFRONT_BASE_URL')}"
+            secure=cookie_settings["secure"],
+            httponly=cookie_settings["httponly"],
+            samesite=cookie_settings["samesite"],
+            domain=cookie_settings["domain"]
         )
 
     return response
