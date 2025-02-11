@@ -48,10 +48,11 @@ def construct_neuroglancer_url(asset_path: str) -> str:
     file_type_prefix = parts[3]
     cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
 
-    if file_type_prefix != 'zarr':
-        file_type_prefix = 'nifti'
-
-    return f'{file_type_prefix}://{cloudfront_s3_location}'
+    # if file_type_prefix != 'zarr':
+    #     file_type_prefix = 'nifti'
+    #
+    # return f'{file_type_prefix}://{cloudfront_s3_location}'
+    return f'{cloudfront_s3_location}'
 
 
 def validate_asset_path(path: str):

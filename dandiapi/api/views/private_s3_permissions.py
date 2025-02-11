@@ -165,7 +165,7 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
         # )
 
         complete_url = construct_neuroglancer_url(
-            f'{file_type_prefix}://{cloudfront_s3_location}',
+            f'{cloudfront_s3_location}',
             parts[4]
         )
 
