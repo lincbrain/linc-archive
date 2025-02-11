@@ -156,8 +156,13 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
         file_type_prefix = parts[3]
         cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
 
-        if file_type_prefix != 'zarr':
-            file_type_prefix = 'nifti'
+        # if file_type_prefix != 'zarr':
+        #     file_type_prefix = 'nifti'
+        #
+        # complete_url = construct_neuroglancer_url(
+        #     f'{file_type_prefix}://{cloudfront_s3_location}',
+        #     parts[4]
+        # )
 
         complete_url = construct_neuroglancer_url(
             f'{file_type_prefix}://{cloudfront_s3_location}',
@@ -175,6 +180,17 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
     response['Access-Control-Allow-Headers'] = 'X-Requested-With, Content-Type'  # Adjust as needed
 
     for cookie_name, cookie_value in cookies.items():
+        # Set cookie for `localhost`
+        response.set_cookie(
+            key=cookie_name,
+            value=cookie_value,
+            secure=False,  # Allows HTTP (localhost)
+            httponly=False,  # Allows JavaScript access
+            samesite="Lax",  # Prevents CSRF but allows cross-site navigation
+            domain=None  # Host-only, meaning it only works for the request domain
+        )
+
+        # Set cookie for `*.lincbrain.org`
         response.set_cookie(
             key=cookie_name,
             value=cookie_value,
