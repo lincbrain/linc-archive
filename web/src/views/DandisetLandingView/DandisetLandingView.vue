@@ -2,7 +2,7 @@
   <div>
     <Meditor v-if="currentDandiset" />
     <v-toolbar class="grey darken-2 white--text">
-      <DandisetSearchField />
+<!--      <DandisetSearchField />-->
       <v-pagination
         v-model="page"
         :length="pages"
@@ -39,12 +39,12 @@
       <div class="d-block">
         <span class="text-h5">
           <v-icon>mdi-alert</v-icon>
-          Error: Dandiset does not exist
+          Error: Dataset does not exist
         </span>
         <br><br>
         <span class="text-body-2">
-          Proceed to the <a href="/dandiset">Public Dandisets page</a>
-          or use the search bar to find a valid Dandiset.
+          Proceed to the <a href="/dandiset">Public Datasets page</a>
+          or use the search bar to find a valid dataset.
         </span>
       </div>
     </v-container>
@@ -114,7 +114,6 @@ import {
 import type { Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router/composables';
 import type { NavigationGuardNext, RawLocation, Route } from 'vue-router';
-import axios from 'axios';
 
 import DandisetSearchField from '@/components/DandisetSearchField.vue';
 import Meditor from '@/components/Meditor/Meditor.vue';
@@ -193,20 +192,11 @@ watch(() => props.identifier, async () => {
   }
 
   // Set default values
-  embargoedOrUnauthenticated.value = false;
   loading.value = true;
 
-  // Catch error to check if response is 401, for embargoed dandisets
-  try {
-    await store.initializeDandisets({ identifier, version });
-
-  } catch (e) {
-    if (axios.isAxiosError(e) && (e.response?.status === 401 || e.response?.status === 403)) {
-      embargoedOrUnauthenticated.value = true
-    } else {
-      throw e
-    }
-  }
+  // Check if response is 401 or 403, for embargoed dandisets
+  await store.initializeDandisets({ identifier, version });
+  embargoedOrUnauthenticated.value = store.meta.dandisetExistsAndEmbargoed;
 
   loading.value = false;
 }, { immediate: true });
