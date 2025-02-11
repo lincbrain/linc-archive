@@ -175,28 +175,29 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
 
     response = Response(response_data)
     response['Access-Control-Allow-Credentials'] = 'true'
-    response['Access-Control-Allow-Origin'] = request.headers.get('Origin', 'https://lincbrain.org')
+    response['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
     response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'  # Adjust as needed
     response['Access-Control-Allow-Headers'] = 'X-Requested-With, Content-Type'  # Adjust as needed
 
     for cookie_name, cookie_value in cookies.items():
-        # Set cookie for `localhost`
+        # Set cookie for `localhost` (host-only, no `domain`)
         response.set_cookie(
             key=cookie_name,
             value=cookie_value,
-            secure=False,  # Allows HTTP (localhost)
-            httponly=False,  # Allows JavaScript access
-            samesite="Lax",  # Prevents CSRF but allows cross-site navigation
-            domain=None  # Host-only, meaning it only works for the request domain
+            secure=False,  # Secure cookies do not work over HTTP
+            httponly=False,  # Allows JavaScript access (adjust as needed)
+            samesite="Lax",  # Allows navigation requests but blocks CSRF
+            domain=None,  # Ensures the cookie only works for localhost (host-only)
         )
 
-        # Set cookie for `*.lincbrain.org`
+        # Set cookie for `*.lincbrain.org` (for CloudFront & production)
         response.set_cookie(
             key=cookie_name,
             value=cookie_value,
-            secure=True,
-            httponly=True,
-            domain=f".{os.getenv('CLOUDFRONT_BASE_URL')}"
+            secure=True,  # Requires HTTPS in production
+            httponly=True,  # Prevents JavaScript access (better security)
+            samesite="Lax",
+            domain=f".{os.getenv('CLOUDFRONT_BASE_URL')}"  # Ensures subdomain-wide access
         )
 
     return response
