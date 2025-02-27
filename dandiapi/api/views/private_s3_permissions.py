@@ -1,55 +1,132 @@
 from __future__ import annotations
 
+import base64
+import datetime
+import io
+import json
+import os
 from typing import TYPE_CHECKING
+import urllib
 
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from dandiapi.api.utils import CloudFrontCookieGenerator
-
-import datetime
-from botocore.signers import CloudFrontSigner
-import rsa
-import json
-
-if TYPE_CHECKING:
-    from django.http.response import HttpResponseBase
-    from rest_framework.request import Request
+from dandiapi.api.storage import get_boto_client, get_storage
 
 
-def rsa_signer(message):
-    import os
-    print(os.getcwd())
-    private_pem_location = 'private_key.pem' # Aaron - TODO
-    with open(private_pem_location, 'r') as key_file:
-        private_key = rsa.PrivateKey.load_pkcs1(key_file.read())
-    return rsa.sign(message, private_key, 'SHA-1')
+def construct_neuroglancer_url(source, layer_name):
+    neuroglancer_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
+    base_url = f'{neuroglancer_url}/cloudfront/frontend/index.html#!'
+    json_object = {
+        "layers": [
+            {
+                "type": "image",
+                "source": source,
+                "tab": "source",
+                "name": layer_name
+            }
+        ],
+        "selectedLayer": {
+            "visible": True,
+            "layer": layer_name
+        },
+        "layout": "4panel"
+    }
+
+    json_str = json.dumps(json_object)
+    encoded_json = urllib.parse.quote(json_str)
+    return f"{base_url}{encoded_json}"
 
 
-def get_cloudfront_cookies():
-    key_pair_id = 'fa996026-f6b3-4979-b758-ccfdc7515ec8'  # test-bucket-key-group -- lincbrain AWS
-    asset_url_folder = 'zarr'  # Aaron - TODO asset_url_folder should be parent folder for all zarr, etc. assets in LINC Archive -- should be OS Env Secret
-    number_of_days = 1
+def _replace_unsupported_chars(some_str):
+    "Replace unsupported chars: '+=/' with '-_~'."
+    return some_str.replace("+", "-") \
+        .replace("=", "_") \
+        .replace("/", "~")
 
-    policy = {
+
+def _in_a_month():
+    "Returns a UTC POSIX timestamp for one month in the future."  # noqa: D401
+    one_month_later = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=30)
+    return int(one_month_later.timestamp())
+
+def rsa_signer(message, key):
+    """
+    Sign a message using RSA private key with PKCS#1 v1.5 padding and SHA-1 hash.
+
+    :param message: The message to sign
+    :param key: RSA private key in PEM format
+    :return: The signature
+    """
+    private_key = load_pem_private_key(
+        key,
+        password=None
+    )
+
+    # Updated signing process
+    return private_key.sign(
+        message,
+        padding.PKCS1v15(),
+        hashes.SHA1()  # noqa: S303
+    )
+
+
+
+def generate_policy_cookie(url):
+    """Returns a tuple: (policy json, policy base64)."""  # noqa: D401
+    policy_dict = {
         "Statement": [
             {
-                "Resource": f"{asset_url_folder}/*",
+                "Resource": f'{url}/*',
                 "Condition": {
-                    "DateLessThan": {"AWS:EpochTime": int((datetime.datetime.now() + datetime.timedelta(days=number_of_days)).timestamp())}
+                    "DateLessThan": {
+                        "AWS:EpochTime": _in_a_month()
+                    }
                 }
             }
         ]
     }
-    print(3)
-    cloudfront_signer = CloudFrontSigner(key_pair_id, rsa_signer)
-    print(4)
-    cookies = cloudfront_signer.generate_cookies(policy=json.dumps(policy), secure=True)
-    print(5)
-    return cookies
+
+    # Using separators=(',', ':') removes separator whitespace
+    policy_json = json.dumps(policy_dict, separators=(",", ":"))
+
+    policy_64 = str(base64.b64encode(policy_json.encode("utf-8")), "utf-8")
+    policy_64 = _replace_unsupported_chars(policy_64)
+    return policy_json, policy_64
+
+
+def generate_signature(policy, key):
+    "Creates a signature for the policy from the key, returning a string."  # noqa: D401
+    sig_bytes = rsa_signer(policy.encode("utf-8"), key)
+    return _replace_unsupported_chars(str(base64.b64encode(sig_bytes), "utf-8"))
+
+
+def generate_cookies(policy, signature):
+    "Returns a dictionary for cookie values in the form 'COOKIE NAME': 'COOKIE VALUE'."  # noqa: D401
+    return {
+        "CloudFront-Policy": policy,
+        "CloudFront-Signature": signature,
+        "CloudFront-Key-Pair-Id": os.getenv('CLOUDFRONT_PEM_KEY_ID')
+    }
+
+
+def generate_signed_cookies(key):
+    neuroglancer_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
+    policy_json, policy_64 = generate_policy_cookie(neuroglancer_url)
+    signature = generate_signature(policy_json, key)
+    return generate_cookies(policy_64, signature)
+
+
+if TYPE_CHECKING:
+    from django.http.response import HttpResponseBase
+    from rest_framework.request import Request
 
 @swagger_auto_schema(
     method='GET',
@@ -61,30 +138,66 @@ def get_cloudfront_cookies():
 @api_view(['GET'])
 @parser_classes([JSONParser])
 @permission_classes([IsAuthenticated])
-def presigned_cookie_s3_cloudfront_view(request: Request) -> HttpResponseBase:
-    expires_in_minutes = 20
-    key_pair_id = 'fa996026-f6b3-4979-b758-ccfdc7515ec8'  # test-bucket-key-group -- lincbrain AWS
-    object_url = 'https://d2du7pzm1jeax1.cloudfront.net/zarr'
+def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> HttpResponseBase:
+    # Get Private PEM Key from S3
+    client = get_boto_client(get_storage())
+    private_pem_key = os.getenv('CLOUDFRONT_PRIVATE_PEM_S3_LOCATION')
+    response = client.get_object(Bucket=settings.DANDI_DANDISETS_BUCKET_NAME, Key=private_pem_key)
+    pem_content = response['Body'].read()
 
-    cloudfront_cookie_generator = CloudFrontCookieGenerator(private_key_file='private_key.pem')
-    expires_at = int((datetime.datetime.utcnow() + datetime.timedelta(minutes=expires_in_minutes)).timestamp())
+    with io.BytesIO(pem_content) as pem_file:
+        cookies = generate_signed_cookies(pem_file.read())
 
-    cookies = cloudfront_cookie_generator.create_signed_cookies(
-        resource=object_url,
-        keypair_id=key_pair_id,
-        expires_at=expires_at
-    )
+    if not asset_path:
+        response_data = {"message": "Cookies successfully generated"}
+    else:
+        replacement_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL')
+        parts = asset_path.split('/')
+        file_type_prefix = parts[3]
+        cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
 
-    response_data = {"message": "Cookies successfully generated"}
+        # if file_type_prefix != 'zarr':
+        #     file_type_prefix = 'nifti'
+        #
+        # complete_url = construct_neuroglancer_url(
+        #     f'{file_type_prefix}://{cloudfront_s3_location}',
+        #     parts[4]
+        # )
+
+        complete_url = construct_neuroglancer_url(
+            f'{cloudfront_s3_location}',
+            parts[4]
+        )
+
+        response_data = {
+            "full_url": complete_url
+        }
+
     response = Response(response_data)
+    response['Access-Control-Allow-Credentials'] = 'true'
+    response['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+    response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'  # Adjust as needed
+    response['Access-Control-Allow-Headers'] = 'X-Requested-With, Content-Type'  # Adjust as needed
+
     for cookie_name, cookie_value in cookies.items():
+        # Set cookie for `localhost` (host-only, no `domain`)
         response.set_cookie(
             key=cookie_name,
             value=cookie_value,
-            max_age=60*60*24,
-            expires=60*60*24, # 1 day
-            secure=True,
-            httponly=True
+            secure=False,  # Secure cookies do not work over HTTP
+            httponly=False,  # Allows JavaScript access (adjust as needed)
+            samesite="Lax",  # Allows navigation requests but blocks CSRF
+            domain=None,  # Ensures the cookie only works for localhost (host-only)
+        )
+
+        # Set cookie for `*.lincbrain.org` (for CloudFront & production)
+        response.set_cookie(
+            key=cookie_name,
+            value=cookie_value,
+            secure=True,  # Requires HTTPS in production
+            httponly=True,  # Prevents JavaScript access (better security)
+            samesite="Lax",
+            domain=f".{os.getenv('CLOUDFRONT_BASE_URL')}"  # Ensures subdomain-wide access
         )
 
     return response
