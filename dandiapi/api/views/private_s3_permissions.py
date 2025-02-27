@@ -156,11 +156,16 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
         file_type_prefix = parts[3]
         cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
 
-        if file_type_prefix != 'zarr':
-            file_type_prefix = 'nifti'
+        # if file_type_prefix != 'zarr':
+        #     file_type_prefix = 'nifti'
+        #
+        # complete_url = construct_neuroglancer_url(
+        #     f'{file_type_prefix}://{cloudfront_s3_location}',
+        #     parts[4]
+        # )
 
         complete_url = construct_neuroglancer_url(
-            f'{file_type_prefix}://{cloudfront_s3_location}',
+            f'{cloudfront_s3_location}',
             parts[4]
         )
 
@@ -170,17 +175,29 @@ def presigned_cookie_s3_cloudfront_view(request: Request, asset_path=None) -> Ht
 
     response = Response(response_data)
     response['Access-Control-Allow-Credentials'] = 'true'
-    response['Access-Control-Allow-Origin'] = request.headers.get('Origin', 'https://lincbrain.org')
+    response['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
     response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'  # Adjust as needed
     response['Access-Control-Allow-Headers'] = 'X-Requested-With, Content-Type'  # Adjust as needed
 
     for cookie_name, cookie_value in cookies.items():
+        # Set cookie for `localhost` (host-only, no `domain`)
         response.set_cookie(
             key=cookie_name,
             value=cookie_value,
-            secure=True,
-            httponly=True,
-            domain=f".{os.getenv('CLOUDFRONT_BASE_URL')}"
+            secure=False,  # Secure cookies do not work over HTTP
+            httponly=False,  # Allows JavaScript access (adjust as needed)
+            samesite="Lax",  # Allows navigation requests but blocks CSRF
+            domain=None,  # Ensures the cookie only works for localhost (host-only)
+        )
+
+        # Set cookie for `*.lincbrain.org` (for CloudFront & production)
+        response.set_cookie(
+            key=cookie_name,
+            value=cookie_value,
+            secure=True,  # Requires HTTPS in production
+            httponly=True,  # Prevents JavaScript access (better security)
+            samesite="Lax",
+            domain=f".{os.getenv('CLOUDFRONT_BASE_URL')}"  # Ensures subdomain-wide access
         )
 
     return response
