@@ -3,7 +3,7 @@ const dandiAboutUrl = 'https://www.dandiarchive.org/';
 const lincBrainUrl = "https://connects.mgh.harvard.edu/";
 const lincDocumentationUrl = 'https://docs.lincbrain.org/';
 const lincHelpUrl = 'https://docs.lincbrain.org/#support';
-const lincHubUrl = 'https://hub.lincbrain.org/';
+const dandihubUrl = 'https://hub.dandiarchive.org/';
 
 const lincWebKNOSSOSUrl = 'https://webknossos.lincbrain.org';
 
@@ -57,7 +57,7 @@ export {
   dandiUrl,
   dandiAboutUrl,
   lincDocumentationUrl,
-  lincHubUrl,
+  dandihubUrl,
   draftVersion,
   lincHelpUrl,
   lincBrainUrl,
