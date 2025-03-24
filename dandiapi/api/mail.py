@@ -23,8 +23,8 @@ BASE_RENDER_CONTEXT = {
     'dandi_web_app_url': settings.DANDI_WEB_APP_URL,
 }
 
-# TODO: turn this into a Django setting
-ADMIN_EMAIL = 'info@dandiarchive.org'
+
+ADMIN_EMAIL = 'admin@lincbrain.org'
 
 
 def user_greeting_name(user: User, socialaccount: SocialAccount = None) -> str:
@@ -68,7 +68,7 @@ def build_removed_message(dandiset, removed_owner):
     }
     # Email sent when a user is removed as an owner from a dandiset
     return build_message(
-        subject=f'Removed from Dandiset "{dandiset.draft_version.name}"',
+        subject=f'Removed from dataset "{dandiset.draft_version.name}"',
         message=render_to_string('api/mail/removed_message.txt', render_context),
         to=[removed_owner.email],
     )
@@ -82,7 +82,7 @@ def build_added_message(dandiset, added_owner):
     }
     # Email sent when a user is added as an owner of a dandiset
     return build_message(
-        subject=f'Added to Dandiset "{dandiset.draft_version.name}"',
+        subject=f'Added to dataset "{dandiset.draft_version.name}"',
         message=render_to_string('api/mail/added_message.txt', render_context),
         to=[added_owner.email],
     )
@@ -98,7 +98,7 @@ def send_ownership_change_emails(dandiset, removed_owners, added_owners):
 def build_registered_message(user: User, socialaccount: SocialAccount):
     # Email sent to the DANDI list when a new user logs in for the first time
     return build_message(
-        subject=f'DANDI: New user registered: {user.email}',
+        subject=f'LINC: New user registered: {user.email}',
         message=render_to_string(
             'api/mail/registered_message.txt',
             {'greeting_name': user_greeting_name(user, socialaccount)},
@@ -121,7 +121,7 @@ def build_new_user_messsage(user: User, socialaccount: SocialAccount = None):
     }
     # Email sent to the DANDI list when a new user logs in for the first time
     return build_message(
-        subject=f'DANDI: Review new user: {user.username}',
+        subject=f'LINC Data Platform: Review new user: {user.username}',
         message=render_to_string('api/mail/new_user_message.txt', render_context),
         to=[ADMIN_EMAIL],
     )
@@ -136,7 +136,7 @@ def send_new_user_message_email(user: User, socialaccount: SocialAccount):
 
 def build_approved_user_message(user: User, socialaccount: SocialAccount = None):
     return build_message(
-        subject='Your DANDI Account',
+        subject='Your LINC Data Platform Account',
         message=render_to_string(
             'api/mail/approved_user_message.txt',
             {
@@ -157,7 +157,7 @@ def send_approved_user_message(user: User, socialaccount: SocialAccount):
 
 def build_rejected_user_message(user: User, socialaccount: SocialAccount = None):
     return build_message(
-        subject='Your DANDI Account',
+        subject='Your LINC Data Platform Account',
         message=render_to_string(
             'api/mail/rejected_user_message.txt',
             {
@@ -179,7 +179,7 @@ def send_rejected_user_message(user: User, socialaccount: SocialAccount):
 def build_pending_users_message(users: Iterable[User]):
     render_context = {**BASE_RENDER_CONTEXT, 'users': users}
     return build_message(
-        subject='DANDI: new user registrations to review',
+        subject='LINC Data Platform: new user registrations to review',
         message=render_to_string('api/mail/pending_users_message.txt', render_context),
         to=[ADMIN_EMAIL],
     )
@@ -188,6 +188,31 @@ def build_pending_users_message(users: Iterable[User]):
 def send_pending_users_message(users: Iterable[User]):
     logger.info('Sending pending users message to admins at %s', ADMIN_EMAIL)
     messages = [build_pending_users_message(users)]
+    with mail.get_connection() as connection:
+        connection.send_messages(messages)
+
+
+def build_dandisets_to_unembargo_message(dandisets: Iterable[Dandiset]):
+    dandiset_context = [
+        {
+            'identifier': ds.identifier,
+            'owners': [user.username for user in ds.owners],
+            'asset_count': ds.draft_version.asset_count,
+            'size': ds.draft_version.size,
+        }
+        for ds in dandisets
+    ]
+    render_context = {**BASE_RENDER_CONTEXT, 'dandisets': dandiset_context}
+    return build_message(
+        subject='DANDI: New Dandisets to unembargo',
+        message=render_to_string('api/mail/dandisets_to_unembargo.txt', render_context),
+        to=[settings.DANDI_DEV_EMAIL],
+    )
+
+
+def send_dandisets_to_unembargo_message(dandisets: Iterable[Dandiset]):
+    logger.info('Sending dandisets to unembargo message to devs at %s', settings.DANDI_DEV_EMAIL)
+    messages = [build_dandisets_to_unembargo_message(dandisets)]
     with mail.get_connection() as connection:
         connection.send_messages(messages)
 

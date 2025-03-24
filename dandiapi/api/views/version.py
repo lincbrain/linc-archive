@@ -14,6 +14,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework_extensions.mixins import DetailSerializerMixin, NestedViewSetMixin
 
 from dandiapi.api.models import Dandiset, Version
+from dandiapi.api.permissions import IsApproved
 from dandiapi.api.services import audit
 from dandiapi.api.services.embargo.exceptions import DandisetUnembargoInProgressError
 from dandiapi.api.services.publish import publish_dandiset
@@ -47,6 +48,8 @@ class VersionViewSet(NestedViewSetMixin, DetailSerializerMixin, ReadOnlyModelVie
 
     lookup_field = 'version'
     lookup_value_regex = Version.VERSION_REGEX
+
+    permission_classes = [IsApproved]
 
     def get_queryset(self):
         # We need to check the dandiset to see if it's embargoed, and if so whether or not the
