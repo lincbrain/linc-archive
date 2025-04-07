@@ -95,6 +95,7 @@ class DandiMixin(ConfigMixin):
     DANDI_DANDISETS_BUCKET_PREFIX = values.Value(default='', environ=True)
     DANDI_DANDISETS_LOG_BUCKET_NAME = values.Value(environ_required=True)
     DANDI_DANDISETS_EMBARGO_LOG_BUCKET_NAME = values.Value(environ_required=True)
+    DANDI_LOG_LEVEL = values.Value(default='INFO', environ=True)
     DANDI_ZARR_PREFIX_NAME = values.Value(default='zarr', environ=True)
 
     # Mainly applies to unembargo
@@ -114,6 +115,7 @@ class DandiMixin(ConfigMixin):
     DANDI_API_URL = values.URLValue(environ_required=True)
     DANDI_JUPYTERHUB_URL = values.URLValue(environ_required=True)
     DANDI_DEV_EMAIL = values.EmailValue(environ_required=False)
+    DANDI_ADMIN_EMAIL = values.EmailValue(environ_required=False)
 
     DANDI_VALIDATION_JOB_INTERVAL = values.IntegerValue(environ=True, default=60)
 
@@ -154,6 +156,11 @@ class DevelopmentConfiguration(DandiMixin, DevelopmentBaseConfiguration):
     SHELL_PLUS_IMPORTS = [
         'from dandiapi.api.mail import *',
     ]
+
+    @staticmethod
+    def mutate_configuration(config: type[ComposedConfiguration]):
+        # This allows django-debug-toolbar to run in swagger and show the last made request
+        config.DEBUG_TOOLBAR_CONFIG['UPDATE_ON_FETCH'] = True
 
 
 class TestingConfiguration(DandiMixin, TestingBaseConfiguration):

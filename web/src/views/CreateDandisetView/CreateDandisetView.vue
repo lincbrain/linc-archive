@@ -52,8 +52,8 @@
           label="Title"
           :counter="nameMaxLength"
           required
-          outlined
-          dense
+          variant="outlined"
+          density="compact"
           class="my-4"
         />
 
@@ -69,8 +69,8 @@
           label="Description"
           :counter="descriptionMaxLength"
           required
-          outlined
-          dense
+          variant="outlined"
+          density="compact"
           class="my-4"
         />
         <div v-if="!embargoed">
@@ -80,7 +80,7 @@
           <div>
             Select a license under which to share the contents of this Dataset.
             You can learn more about <a
-              href="https://www.dandiarchive.org/handbook/35_data_licenses/"
+              href="https://docs.dandiarchive.org/35_data_licenses/"
               target="_blank"
               rel="noopener"
             >
@@ -92,8 +92,8 @@
             :items="dandiLicenses"
             label="License"
             class="my-4"
-            outlined
-            dense
+            variant="outlined"
+            density="compact"
           />
         </div>
         <div v-else>
@@ -110,8 +110,8 @@
             label="Award number"
             :counter="120"
             :required="embargoed"
-            outlined
-            dense
+            variant="outlined"
+            density="compact"
             class="my-4"
             :rules="awardNumberRules"
           />
@@ -125,7 +125,7 @@
         type="submit"
         color="#c44fc4"
         :disabled="saveDisabled"
-        depressed
+        variant="flat"
         @click="registerDandiset"
       >
         Register Dataset
@@ -139,7 +139,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import type { ComputedRef } from 'vue';
 import { dandiRest, loggedIn } from '@/rest';
 import { useDandisetStore } from '@/stores/dandiset';

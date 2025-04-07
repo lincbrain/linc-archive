@@ -1,13 +1,12 @@
 <template>
-  <v-app-bar app>
+  <v-app-bar class="px-4">
     <v-menu
-      v-if="$vuetify.breakpoint.mobile"
-      open-on-hover
-      offset-y
-      close-delay="300"
+      v-if="isMobile"
+      :close-delay="300"
+      location="bottom"
     >
-      <template #activator="{on}">
-        <v-app-bar-nav-icon v-on="on" />
+      <template #activator="{ props }">
+        <v-app-bar-nav-icon v-bind="props" />
       </template>
       <v-list>
         <v-list-item-group>
@@ -71,20 +70,19 @@
     <router-link to="/">
       <v-img
         alt="DANDI logo"
-        contain
-        width="100px"
+        :width="100"
         :src="logo"
         class="mr-3"
       />
     </router-link>
-    <v-toolbar-items v-if="!$vuetify.breakpoint.mobile">
+    <v-toolbar-items v-if="!isMobile">
       <template v-for="navItem in navItems">
         <v-btn
           v-if="!navItem.external && (!navItem.if || navItem.if())"
           :key="navItem.text"
           :to="{name: navItem.to}"
           exact
-          text
+          variant="text"
         >
           {{ navItem.text }}
         </v-btn>
@@ -94,12 +92,12 @@
           :href="navItem.to"
           target="_blank"
           rel="noopener"
-          text
+          variant="text"
         >
           {{ navItem.text }}
           <v-icon
             class="ml-1"
-            small
+            size="small"
           >
             mdi-open-in-new
           </v-icon>
@@ -136,32 +134,31 @@
 
     <div v-if="!insideIFrame">
       <template v-if="loggedIn">
-        <div class="d-flex align-center">
-          <v-btn
-            :disabled="!user?.approved"
-            :to="{ name: 'createDandiset' }"
-            exact
-            class="mx-3"
-            color="#c44fc4"
-            rounded
-          >
-            New Dataset
-          </v-btn>
-          <UserMenu />
-        </div>
+        <v-btn
+          :disabled="!user?.approved"
+          :to="{ name: 'createDandiset' }"
+          class="mx-3"
+          color="primary"
+          variant="elevated"
+          rounded="pill"
+        >
+          New Dandiset
+        </v-btn>
+        <UserMenu />
       </template>
       <template v-else>
         <v-tooltip
-          bottom
+          location="bottom"
           :disabled="cookiesEnabled"
         >
-          <template #activator="{ on }">
-            <div v-on="on">
+          <template #activator="{ props }">
+            <div v-bind="props">
               <v-btn
                 id="login"
                 class="mx-1"
-                color="#c44fc4"
-                rounded
+                color="primary"
+                variant="elevated"
+                rounded="pill"
                 :disabled="!cookiesEnabled"
                 @click="login"
               >
@@ -178,6 +175,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useDisplay } from 'vuetify';
 
 import {
   cookiesEnabled as cookiesEnabledFunc,
@@ -200,6 +198,9 @@ interface NavigationItem {
   onClick?: () => void
 }
 
+const display = useDisplay();
+const isMobile = computed(() => display.mobile.value);
+
 const cookiesEnabled = computed(cookiesEnabledFunc);
 const loggedIn = computed(loggedInFunc);
 const insideIFrame = computed(insideIFrameFunc);
@@ -221,6 +222,12 @@ const navItems: NavigationItem[] = [
     text: 'Homepage',
     to: lincBrainUrl,
     external: true,
+  },
+  {
+    text: 'Starred Dandisets',
+    to: 'starredDandisets',
+    external: false,
+    if: loggedInFunc,
   },
   {
     text: 'Documentation',

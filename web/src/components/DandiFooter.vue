@@ -15,7 +15,7 @@
       </cookie-law>
       <v-row>
         <v-col offset="2">
-          &copy; 2023 - 2024 LINC<br>
+          &copy; 2023 - 2025 LINC<br>
           version
           <a
             class="version-link"
