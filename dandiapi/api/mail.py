@@ -8,6 +8,8 @@ from django.core import mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
+from dandiapi.api.services.permissions.dandiset import get_dandiset_owners
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -103,7 +105,7 @@ def build_registered_message(user: User, socialaccount: SocialAccount):
             'api/mail/registered_message.txt',
             {'greeting_name': user_greeting_name(user, socialaccount)},
         ),
-        to=[ADMIN_EMAIL, user.email],
+        to=[settings.DANDI_ADMIN_EMAIL, user.email],
     )
 
 
@@ -123,7 +125,7 @@ def build_new_user_messsage(user: User, socialaccount: SocialAccount = None):
     return build_message(
         subject=f'LINC Data Platform: Review new user: {user.username}',
         message=render_to_string('api/mail/new_user_message.txt', render_context),
-        to=[ADMIN_EMAIL],
+        to=[settings.DANDI_ADMIN_EMAIL],
     )
 
 
@@ -144,7 +146,7 @@ def build_approved_user_message(user: User, socialaccount: SocialAccount = None)
                 'greeting_name': user_greeting_name(user, socialaccount),
             },
         ),
-        to=[ADMIN_EMAIL, user.email],
+        to=[settings.DANDI_ADMIN_EMAIL, user.email],
     )
 
 
@@ -165,7 +167,7 @@ def build_rejected_user_message(user: User, socialaccount: SocialAccount = None)
                 'rejection_reason': user.metadata.rejection_reason,
             },
         ),
-        to=[ADMIN_EMAIL, user.email],
+        to=[settings.DANDI_ADMIN_EMAIL, user.email],
     )
 
 
@@ -181,12 +183,12 @@ def build_pending_users_message(users: Iterable[User]):
     return build_message(
         subject='LINC Data Platform: new user registrations to review',
         message=render_to_string('api/mail/pending_users_message.txt', render_context),
-        to=[ADMIN_EMAIL],
+        to=[settings.DANDI_ADMIN_EMAIL],
     )
 
 
 def send_pending_users_message(users: Iterable[User]):
-    logger.info('Sending pending users message to admins at %s', ADMIN_EMAIL)
+    logger.info('Sending pending users message to admins at %s', settings.DANDI_ADMIN_EMAIL)
     messages = [build_pending_users_message(users)]
     with mail.get_connection() as connection:
         connection.send_messages(messages)
@@ -232,7 +234,7 @@ def build_dandiset_unembargoed_message(dandiset: Dandiset):
         subject='Your Dandiset has been unembargoed!',
         message=strip_tags(html_message),
         html_message=html_message,
-        to=[owner.email for owner in dandiset.owners],
+        to=[owner.email for owner in get_dandiset_owners(dandiset)],
     )
 
 
@@ -254,9 +256,9 @@ def build_dandiset_unembargo_failed_message(dandiset: Dandiset):
         subject=f'DANDI: Unembargo failed for dandiset {dandiset.identifier}',
         message=strip_tags(html_message),
         html_message=html_message,
-        to=[owner.email for owner in dandiset.owners],
+        to=[owner.email for owner in get_dandiset_owners(dandiset)],
         bcc=[settings.DANDI_DEV_EMAIL],
-        reply_to=[ADMIN_EMAIL],
+        reply_to=[settings.DANDI_ADMIN_EMAIL],
     )
 
 
