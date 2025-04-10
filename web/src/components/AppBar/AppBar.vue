@@ -187,7 +187,7 @@ import {
   user,
 } from '@/rest';
 import {
-  dandiAboutUrl, lincDocumentationUrl, lincHelpUrl, lincHubUrl, lincBrainUrl, lincWebKNOSSOSUrl
+  dandiAboutUrl, lincDocumentationUrl, lincHelpUrl, dandihubUrl, lincBrainUrl, lincWebKNOSSOSUrl
 } from '@/utils/constants';
 import UserMenu from '@/components/AppBar/UserMenu.vue';
 import logo from '@/assets/linc-logo.svg';
@@ -234,7 +234,7 @@ const navItems: NavigationItem[] = [
   },
   {
     text: 'JupyterHub',
-    to: lincHubUrl,
+    to: dandihubUrl,
     external: true,
   }
 ];
