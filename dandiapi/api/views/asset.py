@@ -42,6 +42,7 @@ from rest_framework_extensions.mixins import DetailSerializerMixin, NestedViewSe
 from dandiapi.api.models import Asset, AssetBlob, Dandiset, Version
 from dandiapi.api.models.asset import validate_asset_path
 from dandiapi.api.models.dandiset import DandisetUserObjectPermission
+from dandiapi.api.permissions import IsApproved
 from dandiapi.api.views.common import (
     ASSET_ID_PARAM,
     VERSIONS_DANDISET_PK_PARAM,
@@ -80,6 +81,8 @@ class AssetViewSet(DetailSerializerMixin, GenericViewSet):
     filter_backends = [filters.DjangoFilterBackend]
     filterset_class = AssetFilter
 
+    permission_classes = [IsApproved]
+
     def raise_if_unauthorized(self):
         # We need to check the dandiset to see if it's embargoed, and if so whether or not the
         # user has ownership
@@ -87,10 +90,8 @@ class AssetViewSet(DetailSerializerMixin, GenericViewSet):
         if asset_id is None:
             return
 
-        asset = get_object_or_404(Asset.objects.select_related('blob'), asset_id=asset_id)
-
-        # TODO: When EmbargoedZarrArchive is implemented, check that as well
-        if not (asset.blob and asset.blob.embargoed):
+        asset = get_object_or_404(Asset.objects.select_related('blob', 'zarr'), asset_id=asset_id)
+        if not asset.is_embargoed:
             return
 
         # Clients must be authenticated to access it
@@ -234,6 +235,7 @@ class AssetRequestSerializer(serializers.Serializer):
 
 class NestedAssetViewSet(NestedViewSetMixin, AssetViewSet, ReadOnlyModelViewSet):
     pagination_class = DandiPagination
+    # Inherited from AssetViewSet -- permission_classes = [IsApproved]
 
     def raise_if_unauthorized(self):
         version = get_object_or_404(
@@ -471,7 +473,6 @@ class NestedAssetViewSet(NestedViewSetMixin, AssetViewSet, ReadOnlyModelViewSet)
         include_metadata = serializer.validated_data['metadata']
         if not include_metadata:
             queryset = queryset.defer('metadata')
-
         # Paginate and return
         serializer = self.get_serializer(queryset, many=True, metadata=include_metadata)
         return paginator.get_paginated_response(serializer.data)

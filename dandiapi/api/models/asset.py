@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import datetime
+import logging
+import os
 import re
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
@@ -34,6 +36,23 @@ ASSET_COMPUTED_FIELDS = [
     'datePublished',
     'publishedBy',
 ]
+
+logging.basicConfig(level=logging.ERROR)
+
+def construct_neuroglancer_url(asset_path: str) -> str:
+    replacement_url = os.getenv('CLOUDFRONT_NEUROGLANCER_URL', None)
+    if not replacement_url:
+        return "Neuroglancer not supported"
+
+    parts = asset_path.split('/')
+    file_type_prefix = parts[3]
+    cloudfront_s3_location = replacement_url + '/' + '/'.join(parts[3:])
+
+    # if file_type_prefix != 'zarr':
+    #     file_type_prefix = 'nifti'
+    #
+    # return f'{file_type_prefix}://{cloudfront_s3_location}'
+    return f'{cloudfront_s3_location}'
 
 
 def validate_asset_path(path: str):
@@ -163,6 +182,13 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
         return self.zarr is not None
 
     @property
+    def is_embargoed(self) -> bool:
+        if self.blob is not None:
+            return self.blob.embargoed
+
+        return self.zarr.embargoed  # type: ignore  # noqa: PGH003
+
+    @property
     def size(self):
         if self.is_blob:
             return self.blob.size
@@ -187,6 +213,30 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
             return self.blob.s3_url
         return self.zarr.s3_url
 
+    @property
+    def s3_uri(self) -> str:
+        if self.s3_url is None:
+            raise ValueError("s3_url cannot be None")
+
+        s3_url_substring = None
+        if self.s3_url.startswith("https://"):
+            s3_url_substring = self.s3_url[len("https://"):]
+        elif self.s3_url.startswith("http://"):
+            s3_url_substring = self.s3_url[len("http://"):]
+
+        if s3_url_substring is None:
+            raise ValueError("s3_url must start with 'https://' or 'http://'")
+
+        bucket_name_end_index = s3_url_substring.find(".s3.amazonaws.com")
+        bucket_name = s3_url_substring[:bucket_name_end_index]
+        path = s3_url_substring[bucket_name_end_index + len(".s3.amazonaws.com"):]
+
+        if not path.startswith("/"):
+            path = "/" + path
+
+        return f"s3://{bucket_name}{path}"
+
+
     def is_different_from(
         self,
         *,
@@ -195,7 +245,7 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
         metadata: dict,
         path: str,
     ) -> bool:
-        from dandiapi.zarr.models import EmbargoedZarrArchive, ZarrArchive
+        from dandiapi.zarr.models import ZarrArchive
 
         if isinstance(asset_blob, AssetBlob) and self.blob is not None and self.blob != asset_blob:
             return True
@@ -207,16 +257,10 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
         ):
             return True
 
-        if isinstance(zarr_archive, EmbargoedZarrArchive):
-            raise NotImplementedError
-
         if self.path != path:
             return True
 
-        if self.metadata != metadata:  # noqa: SIM103
-            return True
-
-        return False
+        return self.metadata != metadata
 
     @staticmethod
     def dandi_asset_id(asset_id: str | uuid.UUID):
@@ -228,23 +272,31 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
             'asset-download',
             kwargs={'asset_id': str(self.asset_id)},
         )
+
+        neuroglancer_url = "Neuroglancer not supported for asset"
+        try:
+            neuroglancer_url = construct_neuroglancer_url(self.s3_url)
+        except Exception:  # Catching all exceptions, but logging them
+            logging.exception("Error constructing neuroglancer URL")
+
         metadata = {
             **self.metadata,
             'id': self.dandi_asset_id(self.asset_id),
             'access': [
                 {
                     'schemaKey': 'AccessRequirements',
-                    # TODO: When embargoed zarrs land, include that logic here
                     'status': AccessType.EmbargoedAccess.value
-                    if self.blob and self.blob.embargoed
+                    if self.is_embargoed
                     else AccessType.OpenAccess.value,
                 }
             ],
             'path': self.path,
             'identifier': str(self.asset_id),
             'contentUrl': [download_url, self.s3_url],
+            's3_uri': self.s3_uri,
             'contentSize': self.size,
             'digest': self.digest,
+            'neuroglancerUrl': neuroglancer_url,
         }
         schema_version = metadata['schemaVersion']
         metadata['@context'] = (
@@ -283,7 +335,4 @@ class Asset(PublishableMetadataMixin, TimeStampedModel):
             .aggregate(size=models.Sum('size'))['size']
             or 0
             for cls in (AssetBlob, ZarrArchive)
-            # adding of Zarrs to embargoed dandisets is not supported
-            # so no point of adding EmbargoedZarr here since would also result in error
-            # TODO: add EmbagoedZarr whenever supported
         )

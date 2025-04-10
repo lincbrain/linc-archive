@@ -1,8 +1,13 @@
 const dandiUrl = 'https://dandiarchive.org';
 const dandiAboutUrl = 'https://www.dandiarchive.org/';
-const dandiDocumentationUrl = 'https://www.dandiarchive.org/handbook/10_using_dandi/';
-const dandiHelpUrl = 'https://github.com/dandi/helpdesk/issues/new/choose';
+const lincBrainUrl = "https://connects.mgh.harvard.edu/";
+const lincDocumentationUrl = 'https://docs.lincbrain.org/';
+const lincHelpUrl = 'https://docs.lincbrain.org/#support';
 const dandihubUrl = 'https://hub.dandiarchive.org/';
+
+const lincWebKNOSSOSUrl = 'https://webknossos.lincbrain.org';
+
+const sentryLandingPageUrl = "https://sentry.io";
 
 const draftVersion = 'draft';
 
@@ -51,11 +56,14 @@ const DANDISETS_PER_PAGE = 8;
 export {
   dandiUrl,
   dandiAboutUrl,
-  dandiDocumentationUrl,
+  lincDocumentationUrl,
   dandihubUrl,
   draftVersion,
-  dandiHelpUrl,
+  lincHelpUrl,
+  lincBrainUrl,
+  lincWebKNOSSOSUrl,
   VALIDATION_ICONS,
   sortingOptions,
   DANDISETS_PER_PAGE,
+  sentryLandingPageUrl,
 };

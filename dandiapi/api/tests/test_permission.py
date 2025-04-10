@@ -67,7 +67,7 @@ from rest_framework.permissions import SAFE_METHODS
         ('post', '/api/zarr/{zarr.zarr_id}/files/', True),
     ],
 )
-@pytest.mark.django_db
+@pytest.mark.django_db()
 def test_approved_or_readonly(
     api_client,
     user,
@@ -88,11 +88,6 @@ def test_approved_or_readonly(
     url = url_format.format(dandiset=dandiset, asset=asset, zarr=zarr)
     response = getattr(api_client, method)(url)
 
-    # Safe method, read only is okay
-    if method.upper() in SAFE_METHODS:
-        assert response.status_code < 400
-        return
-
     # The client is not authenticated, so all response codes should be 401
     assert response.status_code == 401
 
@@ -101,6 +96,11 @@ def test_approved_or_readonly(
         return
 
     api_client.force_authenticate(user=user)
+
+    # Safe method, read only is okay
+    if method.upper() in SAFE_METHODS:
+        assert response.status_code < 400
+        return
 
     # Zarr create is a special case, as permission can only be
     # denied after reading the request body
