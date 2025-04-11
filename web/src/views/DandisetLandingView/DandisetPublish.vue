@@ -1,7 +1,7 @@
 <template>
   <v-card
     v-if="currentDandiset && otherVersions"
-    outlined
+    variant="outlined"
     class="mt-4 px-3"
   >
     <v-dialog
@@ -26,13 +26,13 @@
         <v-card-actions>
           <v-btn
             color="error"
-            depressed
+            variant="flat"
             @click="publish()"
           >
             Yes
           </v-btn>
           <v-btn
-            depressed
+            variant="flat"
             @click="showPublishWarningDialog = false"
           >
             No, take me back
@@ -46,17 +46,17 @@
     >
       <v-tooltip
         :disabled="!publishDisabledMessage"
-        left
+        location="left"
       >
-        <template #activator="{ on }">
+        <template #activator="{ props: tooltipProps }">
           <div
             class="px-1 pt-3"
             style="width: 100%"
-            v-on="on"
+            v-bind="tooltipProps"
           >
             <v-row
               v-if="showPublishWarning"
-              class="text-caption error--text align-center mb-3"
+              class="text-caption text-error align-center mb-3"
               no-gutters
             >
               <v-col
@@ -81,13 +81,13 @@
                 v-model="showPublishChecklistDialog"
                 width="900"
               >
-                <template #activator="{ on: onNested }">
+                <template #activator="{ props: dialogProps }">
                   <v-btn
                     block
                     :color="showPublishWarning ? 'error' : 'success'"
-                    depressed
+                    variant="flat"
                     :disabled="publishButtonDisabled"
-                    v-on="onNested"
+                    v-bind="dialogProps"
                   >
                     Publish
                     <v-spacer />
@@ -96,7 +96,7 @@
                 </template>
 
                 <v-card>
-                  <v-card-title class="text-h5 grey lighten-2">
+                  <v-card-title class="text-h5 bg-grey-lighten-2">
                     Publish Checklist
                   </v-card-title>
 
@@ -123,14 +123,14 @@
                   <v-card-actions class="justify-end">
                     <v-btn
                       color="dropzone"
-                      depressed
+                      variant="flat"
                       @click="showPublishChecklistDialog = false"
                     >
                       Cancel
                     </v-btn>
                     <v-btn
                       :color="showPublishWarning ? 'error' : 'success'"
-                      depressed
+                      variant="flat"
                       @click="publish"
                     >
                       Publish
@@ -153,129 +153,15 @@
       </v-tooltip>
     </v-row>
 
-    <v-row
-      v-if="currentDandiset.status === 'Pending'"
-      class="my-2 px-1"
-      no-gutters
-    >
-      <v-menu
-        :nudge-width="200"
-      >
-        <template #activator="{ on: menu, attrs }">
-          <v-tooltip bottom>
-            <template #activator="{ on: tooltip }">
-              <v-card
-                class="amber lighten-5 no-text-transform"
-                outlined
-                v-bind="attrs"
-                v-on="{ ...tooltip, ...menu }"
-              >
-                <v-row class="align-center px-4">
-                  <v-col
-                    cols="1"
-                    class="justify-center py-0"
-                  >
-                    <v-icon
-                      color="warning"
-                      class="mr-1"
-                    >
-                      mdi-playlist-remove
-                    </v-icon>
-                  </v-col>
-                  <v-spacer />
-                  <v-col cols="9">
-                    <div
-                      v-if="currentDandiset"
-                      class="text-caption"
-                    >
-                      Validation of the dataset is pending.
-                    </div>
-                  </v-col>
-                </v-row>
-              </v-card>
-            </template>
-            <span>Reload the page to see if validation is over.</span>
-          </v-tooltip>
-        </template>
-      </v-menu>
-    </v-row>
+    <DandisetValidationErrors
+      :dandiset="currentDandiset"
+      :is-owner="isOwner"
+    />
 
-    <!-- Dialog where version and asset errors are shown -->
-    <v-dialog v-model="errorDialogOpen">
-      <ValidationErrorDialog
-        :selected-tab="selectedTab"
-        :asset-validation-errors="currentDandiset.asset_validation_errors"
-        :version-validation-errors="currentDandiset.version_validation_errors"
-        :owner="isOwner"
-        @openMeditor="openMeditor"
-      />
-    </v-dialog>
-
-    <!-- Version Validation Errors Button -->
-    <v-card
-      v-if="currentDandiset.version_validation_errors.length"
-      class="my-2 px-1 amber lighten-5 no-text-transform"
-      outlined
-      @click="openErrorDialog('metadata')"
-    >
-      <v-row class="align-center px-4">
-        <v-col
-          cols="1"
-          class="justify-center py-0"
-        >
-          <v-icon
-            color="warning"
-            class="mr-1"
-          >
-            mdi-playlist-remove
-          </v-icon>
-        </v-col>
-        <v-spacer />
-        <v-col cols="9">
-          <div
-            v-if="currentDandiset"
-            class="text-caption"
-          >
-            This Dataset has {{ currentDandiset.version_validation_errors.length }}
-            metadata validation error(s).
-          </div>
-        </v-col>
-      </v-row>
-    </v-card>
-
-    <!-- Asset Validation Errors Button -->
-    <v-card
-      v-if="numAssetValidationErrors"
-      class="my-2 px-1 amber lighten-5 no-text-transform"
-      outlined
-      @click="openErrorDialog('assets')"
-    >
-      <v-row class="align-center px-4">
-        <v-col
-          cols="1"
-          class="justify-center py-0"
-        >
-          <v-icon
-            color="warning"
-            class="mr-1"
-          >
-            mdi-database-remove
-          </v-icon>
-        </v-col>
-        <v-spacer />
-        <v-col cols="9">
-          <div class="text-caption">
-            This Dataset has {{ numAssetValidationErrors }}
-            asset validation error(s).
-          </div>
-        </v-col>
-      </v-row>
-    </v-card>
-
-    <v-row>
-      <v-subheader class="mb-2 black--text text-h5">
+    <v-row no-gutters>
+      <v-list-subheader class="mb-2 text-black text-h5">
         This Version
-      </v-subheader>
+      </v-list-subheader>
     </v-row>
     <v-row
       class="pa-2 mb-5 text-body-2 align-center"
@@ -284,7 +170,7 @@
              text-align: center;"
     >
       <v-col
-        :cols="$vuetify.breakpoint.md ? 12 : 4"
+        :cols="isMdDisplay ? 12 : 4"
         style=""
       >
         {{ formatDate(currentDandiset.modified) }}
@@ -293,10 +179,10 @@
         <h3>{{ currentVersion?.toUpperCase() }}</h3>
       </v-col>
     </v-row>
-    <v-row>
-      <v-subheader class="mb-2 black--text text-h5">
+    <v-row no-gutters>
+      <v-list-subheader class="mb-2 text-black text-h5">
         Other Versions
-      </v-subheader>
+      </v-list-subheader>
     </v-row>
     <v-row
       v-for="(version, i) in otherVersions"
@@ -307,29 +193,28 @@
              text-align: center;"
     >
       <v-col
-        :cols="$vuetify.breakpoint.md ? 12 : 4"
+        :cols="isMdDisplay ? 12 : 4"
       >
         {{ formatDate(version.modified) }}
       </v-col>
       <v-col>
         <v-btn
-          outlined
+          variant="outlined"
           @click="setVersion(version)"
         >
           {{ version.version.toUpperCase() }}
         </v-btn>
       </v-col>
     </v-row>
-    <v-snackbar :value="!!alreadyBeingPublishedError">
+    <v-snackbar :model-value="!!alreadyBeingPublishedError">
       This dataset is already being published. Please wait for publishing to complete.
     </v-snackbar>
-    <v-snackbar :value="!!publishedVersion">
+    <v-snackbar :model-value="!!publishedVersion">
       Publish complete.
-      <template #action="{ attrs }">
+      <template #actions>
         <v-btn
-          color="info lighten-2"
-          text
-          v-bind="attrs"
+          color="info"
+          variant="text"
           @click="navigateToPublishedVersion"
         >
           Go to published dandiset
@@ -348,21 +233,21 @@ import {
   ref,
   watchEffect,
 } from 'vue';
+import { useDisplay } from 'vuetify';
 
 import axios from 'axios';
 import moment from 'moment';
 
-import type { RawLocation } from 'vue-router';
-import { useRoute } from 'vue-router/composables';
+import type { RouteLocationRaw } from 'vue-router';
+import { useRoute } from 'vue-router';
+
 import { dandiRest, loggedIn as loggedInFunc, user } from '@/rest';
 import { useDandisetStore } from '@/stores/dandiset';
 import router from '@/router';
 import type { User, Version } from '@/types';
-
 import { draftVersion } from '@/utils/constants';
-import { open as meditorOpen } from '@/components/Meditor/state';
+import DandisetValidationErrors from './DandisetValidationErrors.vue';
 
-import ValidationErrorDialog from '@/components/DLP/ValidationErrorDialog.vue';
 
 const PUBLISH_CHECKLIST = [
   'A descriptive title (e.g., <span class="font-italic">Data related to foraging behavior in bees</span> rather than <span class="font-italic">Smith et al 2022</span>)',
@@ -394,7 +279,9 @@ const props = defineProps({
 });
 const route = useRoute();
 const store = useDandisetStore();
+const display = useDisplay();
 
+const isMdDisplay = computed(() => display.md.value);
 const currentDandiset = computed(() => store.dandiset);
 const currentVersion = computed(() => store.dandiset?.version);
 
@@ -423,11 +310,15 @@ const alreadyBeingPublishedError = ref(false);
 const containsZarr = ref(false);
 watchEffect(async () => {
   if (currentDandiset.value) {
-    const zarr = await dandiRest.zarr({
-      dandiset: currentDandiset.value.dandiset.identifier,
-    });
+    const { identifier } = currentDandiset.value.dandiset;
+    const { version } = currentDandiset.value;
+    const res = await dandiRest.assets(
+      identifier,
+      version,
+      { params: { zarr: true, page_size: 1 } },
+    );
 
-    containsZarr.value = zarr.count > 0;
+    containsZarr.value = res !== null && res.count > 0;
   }
 });
 
@@ -490,30 +381,11 @@ onUnmounted(() => {
   window.clearInterval(timer);
 });
 
-// Error dialog
-const errorDialogOpen = ref(false);
-type ErrorCategory = 'metadata' | 'assets';
-const selectedTab = ref<ErrorCategory>('metadata');
-function openErrorDialog(tab: ErrorCategory) {
-  errorDialogOpen.value = true;
-  selectedTab.value = tab;
-}
 
-function openMeditor() {
-  errorDialogOpen.value = false;
-  meditorOpen.value = true;
-}
 
-const numAssetValidationErrors = computed(() => {
-  if (currentDandiset.value === null) {
-    return 0;
-  }
-
-  return currentDandiset.value.asset_validation_errors.length;
-});
 const publishButtonDisabled = computed(() => !!(
   currentDandiset.value?.version_validation_errors.length
-      || numAssetValidationErrors.value
+      || currentDandiset.value?.asset_validation_errors.length
       || currentDandiset.value?.dandiset.embargo_status !== 'OPEN'
       || publishDisabledMessage.value
 ));
@@ -560,7 +432,7 @@ function setVersion({ version: newVersion }: any) {
         ...route.params,
         version,
       },
-    } as RawLocation);
+    } as RouteLocationRaw);
 
     store.fetchDandiset({
       identifier: currentDandiset.value?.dandiset.identifier,

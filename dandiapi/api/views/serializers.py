@@ -46,6 +46,8 @@ class UserDetailSerializer(serializers.Serializer):
 
 class DandisetSerializer(serializers.ModelSerializer):
     contact_person = serializers.SerializerMethodField(method_name='get_contact_person')
+    star_count = serializers.SerializerMethodField()
+    is_starred = serializers.SerializerMethodField()
 
     class Meta:
         model = Dandiset
@@ -55,6 +57,8 @@ class DandisetSerializer(serializers.ModelSerializer):
             'modified',
             'contact_person',
             'embargo_status',
+            'star_count',
+            'is_starred',
         ]
         read_only_fields = ['created']
 
@@ -65,6 +69,15 @@ class DandisetSerializer(serializers.ModelSerializer):
             return ''
 
         return extract_contact_person(latest_version)
+
+    def get_star_count(self, dandiset):
+        return dandiset.star_count
+
+    def get_is_starred(self, dandiset):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return dandiset.is_starred_by(request.user)
 
 
 class CreateDandisetQueryParameterSerializer(serializers.Serializer):
@@ -103,6 +116,12 @@ class VersionSerializer(serializers.ModelSerializer):
 
     dandiset = DandisetSerializer()
     # name = serializers.SlugRelatedField(read_only=True, slug_field='name')
+
+    def __init__(self, *args, child_context=False, **kwargs):
+        if child_context:
+            del self.fields['dandiset']
+
+        super().__init__(*args, **kwargs)
 
 
 class DandisetVersionSerializer(serializers.ModelSerializer):
@@ -160,6 +179,12 @@ class DandisetListSerializer(DandisetSerializer):
 
         return contact
 
+    def get_star_count(self, dandiset):
+        return self.context['stars'][dandiset.id]['total']
+
+    def get_is_starred(self, dandiset):
+        return self.context['stars'][dandiset.id]['starred_by_current_user']
+
     most_recent_published_version = serializers.SerializerMethodField()
     draft_version = serializers.SerializerMethodField()
 
@@ -178,8 +203,8 @@ class DandisetDetailSerializer(DandisetSerializer):
     class Meta(DandisetSerializer.Meta):
         fields = [*DandisetSerializer.Meta.fields, 'most_recent_published_version', 'draft_version']
 
-    most_recent_published_version = VersionSerializer(read_only=True)
-    draft_version = VersionSerializer(read_only=True)
+    most_recent_published_version = VersionSerializer(read_only=True, child_context=True)
+    draft_version = VersionSerializer(read_only=True, child_context=True)
 
 
 class DandisetQueryParameterSerializer(serializers.Serializer):
@@ -196,6 +221,15 @@ class DandisetQueryParameterSerializer(serializers.Serializer):
         choices=['me'],
         required=False,
         help_text='Set this value to "me" to only return dandisets owned by the current user.',
+    )
+    starred = serializers.BooleanField(
+        default=False,
+        help_text='Whether to filter the result to only dandisets'
+        ' that have been starred by the current user.',
+    )
+    search = serializers.CharField(
+        required=False,
+        help_text='Search terms to filter the results.',
     )
 
 
@@ -371,6 +405,7 @@ class AssetDetailSerializer(AssetSerializer):
 class AssetListSerializer(serializers.Serializer):
     glob = serializers.CharField(required=False)
     metadata = serializers.BooleanField(required=False, default=False)
+    zarr = serializers.BooleanField(required=False, default=False)
 
 
 class AssetPathsQueryParameterSerializer(serializers.Serializer):

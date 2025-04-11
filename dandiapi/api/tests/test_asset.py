@@ -6,7 +6,6 @@ from uuid import uuid4
 from django.conf import settings
 from django.db.utils import IntegrityError
 from django.urls import reverse
-from guardian.shortcuts import assign_perm
 import pytest
 import requests
 
@@ -16,6 +15,7 @@ from dandiapi.api.models.asset_paths import AssetPath
 from dandiapi.api.models.dandiset import Dandiset
 from dandiapi.api.services.asset import add_asset_to_version
 from dandiapi.api.services.asset.exceptions import AssetPathConflictError
+from dandiapi.api.services.permissions.dandiset import add_dandiset_owner
 from dandiapi.api.services.publish import publish_asset
 from dandiapi.api.tasks.scheduled import validate_pending_asset_metadata
 from dandiapi.zarr.models import ZarrArchive, ZarrArchiveStatus
@@ -238,6 +238,44 @@ def test_asset_full_metadata_zarr(draft_asset_factory, zarr_archive):
     }
 
 
+@pytest.mark.django_db
+def test_asset_full_metadata_access(
+    draft_asset_factory, asset_blob_factory, zarr_archive_factory, embargoed_zarr_archive_factory
+):
+    raw_metadata = {
+        'foo': 'bar',
+        'schemaVersion': settings.DANDI_SCHEMA_VERSION,
+    }
+    embargoed_zarr_asset: Asset = draft_asset_factory(
+        metadata=raw_metadata, blob=None, zarr=embargoed_zarr_archive_factory()
+    )
+    open_zarr_asset: Asset = draft_asset_factory(
+        metadata=raw_metadata, blob=None, zarr=zarr_archive_factory()
+    )
+
+    embargoed_blob_asset: Asset = draft_asset_factory(
+        metadata=raw_metadata, blob=asset_blob_factory(embargoed=True), zarr=None
+    )
+    open_blob_asset: Asset = draft_asset_factory(
+        metadata=raw_metadata, blob=asset_blob_factory(embargoed=False), zarr=None
+    )
+
+    # Test that access is correctly inferred from embargo status
+    assert embargoed_zarr_asset.full_metadata['access'] == [
+        {'schemaKey': 'AccessRequirements', 'status': AccessType.EmbargoedAccess.value}
+    ]
+    assert embargoed_blob_asset.full_metadata['access'] == [
+        {'schemaKey': 'AccessRequirements', 'status': AccessType.EmbargoedAccess.value}
+    ]
+
+    assert open_zarr_asset.full_metadata['access'] == [
+        {'schemaKey': 'AccessRequirements', 'status': AccessType.OpenAccess.value}
+    ]
+    assert open_blob_asset.full_metadata['access'] == [
+        {'schemaKey': 'AccessRequirements', 'status': AccessType.OpenAccess.value}
+    ]
+
+
 # API Tests
 
 
@@ -292,6 +330,35 @@ def test_asset_rest_list_include_metadata(api_client, user, version, asset, asse
         {'metadata': True},
     )
     assert r.json()['results'][0]['metadata'] == asset.full_metadata
+
+
+@pytest.mark.django_db
+def test_asset_rest_list_zarr_only(
+    api_client, draft_version, draft_asset_factory, zarr_archive_factory
+):
+    # Create two blob assets and one zarr asset
+    zarr_asset = draft_asset_factory(
+        blob=None, zarr=zarr_archive_factory(dandiset=draft_version.dandiset)
+    )
+    draft_version.assets.add(zarr_asset)
+    draft_version.assets.add(draft_asset_factory())
+    draft_version.assets.add(draft_asset_factory())
+
+    # Assert missing and false both return all assets
+    ident = draft_version.dandiset.identifier
+    ver = draft_version.version
+    assert api_client.get(f'/api/dandisets/{ident}/versions/{ver}/assets/').json()['count'] == 3
+    assert (
+        api_client.get(f'/api/dandisets/{ident}/versions/{ver}/assets/', {'zarr': False}).json()[
+            'count'
+        ]
+        == 3
+    )
+
+    # Test positive case
+    r = api_client.get(f'/api/dandisets/{ident}/versions/{ver}/assets/', {'zarr': True}).json()
+    assert r['count'] == 1
+    assert r['results'][0]['asset_id'] == str(zarr_asset.asset_id)
 
 
 @pytest.mark.parametrize(
@@ -488,7 +555,7 @@ def test_asset_rest_validation(api_client, user, version, asset, status, validat
 
 @pytest.mark.django_db()
 def test_asset_create(api_client, user, draft_version, asset_blob):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -562,7 +629,7 @@ def test_asset_create(api_client, user, draft_version, asset_blob):
 def test_asset_create_path_validation(
     api_client, user, draft_version, asset_blob, path, expected_status_code
 ):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     metadata = {
@@ -583,7 +650,7 @@ def test_asset_create_path_validation(
 
 @pytest.mark.django_db()
 def test_asset_create_conflicting_path(api_client, user, draft_version, asset_blob):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     # Add first asset
@@ -629,7 +696,7 @@ def test_asset_create_embargo(
     dandiset = dandiset_factory(embargo_status=Dandiset.EmbargoStatus.EMBARGOED)
     draft_version = draft_version_factory(dandiset=dandiset)
 
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
     assert draft_version.dandiset.embargo_status == Dandiset.EmbargoStatus.EMBARGOED
 
@@ -664,7 +731,7 @@ def test_asset_create_unembargo_in_progress(
     dandiset = dandiset_factory(embargo_status=Dandiset.EmbargoStatus.UNEMBARGOING)
     draft_version = draft_version_factory(dandiset=dandiset)
 
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -695,7 +762,7 @@ def test_asset_create_embargoed_asset_blob_open_dandiset(
     assert draft_version.dandiset.embargo_status == Dandiset.EmbargoStatus.OPEN
     assert embargoed_asset_blob.embargoed
 
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -731,7 +798,7 @@ def test_asset_create_embargoed_asset_blob_open_dandiset(
 
 @pytest.mark.django_db()
 def test_asset_create_zarr(api_client, user, draft_version, zarr_archive):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -781,7 +848,7 @@ def test_asset_create_zarr(api_client, user, draft_version, zarr_archive):
 def test_asset_create_zarr_validated(
     api_client, user, draft_version, zarr_archive, zarr_file_factory
 ):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -830,7 +897,7 @@ def test_asset_create_zarr_validated(
 def test_asset_create_zarr_wrong_dandiset(
     api_client, user, draft_version, zarr_archive_factory, dandiset_factory
 ):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     zarr_dandiset = dandiset_factory()
@@ -857,7 +924,7 @@ def test_asset_create_zarr_wrong_dandiset(
 
 @pytest.mark.django_db()
 def test_asset_create_no_blob_or_zarr(api_client, user, draft_version):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -881,7 +948,7 @@ def test_asset_create_no_blob_or_zarr(api_client, user, draft_version):
 
 @pytest.mark.django_db()
 def test_asset_create_blob_and_zarr(api_client, user, draft_version, asset_blob, zarr_archive):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -905,7 +972,7 @@ def test_asset_create_blob_and_zarr(api_client, user, draft_version, asset_blob,
 
 @pytest.mark.django_db()
 def test_asset_create_no_valid_blob(api_client, user, draft_version):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -923,7 +990,7 @@ def test_asset_create_no_valid_blob(api_client, user, draft_version):
 
 @pytest.mark.django_db()
 def test_asset_create_no_path(api_client, user, draft_version, asset_blob):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     metadata = {'meta': 'data', 'foo': ['bar', 'baz'], '1': 2}
@@ -954,7 +1021,7 @@ def test_asset_create_not_an_owner(api_client, user, version):
 
 @pytest.mark.django_db()
 def test_asset_create_published_version(api_client, user, published_version, asset):
-    assign_perm('owner', user, published_version.dandiset)
+    add_dandiset_owner(published_version.dandiset, user)
     api_client.force_authenticate(user=user)
     published_version.assets.add(asset)
 
@@ -975,7 +1042,7 @@ def test_asset_create_published_version(api_client, user, published_version, ass
 
 @pytest.mark.django_db()
 def test_asset_create_existing_path(api_client, user, draft_version, asset_blob, asset_factory):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     path = 'test/create/asset.txt'
@@ -999,9 +1066,43 @@ def test_asset_create_existing_path(api_client, user, draft_version, asset_blob,
     assert resp.status_code == 409
 
 
-@pytest.mark.django_db()
+# Must use transaction=True as the tested function uses a transaction on_commit hook
+@pytest.mark.django_db(transaction=True)
+def test_asset_create_on_open_dandiset_embargoed_asset_blob(
+    api_client, user, draft_version, embargoed_asset_blob, mocker
+):
+    mocked = mocker.patch('dandiapi.api.services.asset.remove_asset_blob_embargoed_tag_task.delay')
+
+    assert embargoed_asset_blob.embargoed
+
+    add_dandiset_owner(draft_version.dandiset, user)
+    api_client.force_authenticate(user)
+
+    path = 'test/create/asset.txt'
+    metadata = {
+        'encodingFormat': 'application/x-nwb',
+        'path': path,
+    }
+
+    resp = api_client.post(
+        f'/api/dandisets/{draft_version.dandiset.identifier}'
+        f'/versions/{draft_version.version}/assets/',
+        {'metadata': metadata, 'blob_id': embargoed_asset_blob.blob_id},
+        format='json',
+    )
+    assert resp.status_code == 200
+
+    # Check that asset blob is no longer embargoed
+    embargoed_asset_blob.refresh_from_db()
+    assert not embargoed_asset_blob.embargoed
+
+    # Check that tag removal function called
+    mocked.assert_called_once()
+
+
+@pytest.mark.django_db
 def test_asset_rest_rename(api_client, user, draft_version, asset_blob):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     # Create asset
@@ -1027,7 +1128,7 @@ def test_asset_rest_rename(api_client, user, draft_version, asset_blob):
 
 @pytest.mark.django_db()
 def test_asset_rest_update(api_client, user, draft_version, asset, asset_blob):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
     draft_version.assets.add(asset)
     add_asset_paths(asset=asset, version=draft_version)
@@ -1088,7 +1189,7 @@ def test_asset_rest_update(api_client, user, draft_version, asset, asset_blob):
 
 @pytest.mark.django_db()
 def test_asset_rest_update_embargo(api_client, user, draft_version, asset, embargoed_asset_blob):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
     draft_version.assets.add(asset)
     add_asset_paths(asset=asset, version=draft_version)
@@ -1149,7 +1250,7 @@ def test_asset_rest_update_unembargo_in_progress(
     draft_version = draft_version_factory(
         dandiset__embargo_status=Dandiset.EmbargoStatus.UNEMBARGOING
     )
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
     draft_version.assets.add(asset)
 
@@ -1180,7 +1281,7 @@ def test_asset_rest_update_zarr(
     zarr_archive,
     zarr_file_factory,
 ):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     asset = draft_asset_factory(blob=None, zarr=zarr_archive)
@@ -1276,7 +1377,7 @@ def test_asset_rest_update_not_an_owner(api_client, user, draft_version, asset):
 
 @pytest.mark.django_db()
 def test_asset_rest_update_published_version(api_client, user, published_version, asset):
-    assign_perm('owner', user, published_version.dandiset)
+    add_dandiset_owner(published_version.dandiset, user)
     api_client.force_authenticate(user=user)
     published_version.assets.add(asset)
 
@@ -1299,7 +1400,7 @@ def test_asset_rest_update_to_existing(api_client, user, draft_version, asset_fa
     draft_version.assets.add(old_asset)
     draft_version.assets.add(existing_asset)
 
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     api_client.force_authenticate(user=user)
 
     # Set path so API request succeeds
@@ -1315,7 +1416,7 @@ def test_asset_rest_update_to_existing(api_client, user, draft_version, asset_fa
 
 @pytest.mark.django_db()
 def test_asset_rest_delete(api_client, user, draft_version, asset):
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     draft_version.assets.add(asset)
 
     # Add paths
@@ -1350,7 +1451,7 @@ def test_asset_rest_delete_unembargo_in_progress(api_client, user, draft_version
     draft_version = draft_version_factory(
         dandiset__embargo_status=Dandiset.EmbargoStatus.UNEMBARGOING
     )
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     draft_version.assets.add(asset)
 
     # Make request
@@ -1372,7 +1473,7 @@ def test_asset_rest_delete_zarr(
     zarr_file_factory,
 ):
     asset = draft_asset_factory(blob=None, zarr=zarr_archive)
-    assign_perm('owner', user, draft_version.dandiset)
+    add_dandiset_owner(draft_version.dandiset, user)
     draft_version.assets.add(asset)
 
     # Add paths
@@ -1408,7 +1509,7 @@ def test_asset_rest_delete_zarr_modified(
 
     # Assign perms and authenticate user
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
     api_client.force_authenticate(user=user)
 
     # Ensure zarr is ingested
@@ -1468,7 +1569,7 @@ def test_asset_rest_delete_not_an_owner(api_client, user, version, asset):
 @pytest.mark.django_db()
 def test_asset_rest_delete_published_version(api_client, user, published_version, asset):
     api_client.force_authenticate(user=user)
-    assign_perm('owner', user, published_version.dandiset)
+    add_dandiset_owner(published_version.dandiset, user)
     published_version.assets.add(asset)
 
     response = api_client.delete(
@@ -1526,7 +1627,7 @@ def test_asset_download_embargo(
     )
 
     # Assign perms and set client
-    assign_perm('owner', user, version.dandiset)
+    add_dandiset_owner(version.dandiset, user)
     client = authenticated_api_client
 
     # Generate assets and blobs

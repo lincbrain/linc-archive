@@ -6,12 +6,11 @@
     />
     <v-container v-else>
       <v-dialog
-        v-if="!!itemToDelete"
-        v-model="itemToDelete"
+        v-model="deletePopupOpen"
         persistent
         max-width="60vh"
       >
-        <v-card>
+        <v-card v-if="itemToDelete">
           <v-card-title class="text-h5">
             Really delete this asset?
           </v-card-title>
@@ -26,7 +25,7 @@
           <v-card-actions>
             <v-spacer />
             <v-btn
-              @click="itemToDelete = null"
+              @click="deletePopupOpen = false"
             >
               Cancel
             </v-btn>
@@ -44,9 +43,10 @@
       <v-row>
         <v-col :cols="12">
           <v-card>
-            <v-card-title>
+            <v-card-title class="d-flex align-center">
               <v-btn
                 icon
+                variant="text"
                 exact
                 :to="{
                   name: 'dandisetLanding',
@@ -103,283 +103,160 @@
                 v-if="location !== rootDirectory"
                 @click="navigateToParent"
               >
-                <v-icon
-                  class="mr-2"
-                  color="primary"
-                >
-                  mdi-folder
-                </v-icon>
-                ..
+                <template #prepend>
+                  <v-icon
+                    class="mr-2"
+                    color="primary"
+                  >
+                    mdi-folder
+                  </v-icon>
+                  ..
+                </template>
               </v-list-item>
 
               <v-list-item
                 v-for="item in items"
                 :key="item.path"
                 color="primary"
-                @click.self="openItem(item)"
+                @click="openItem(item)"
               >
-                <v-icon
-                  class="mr-2"
-                  color="primary"
-                >
-                  <template v-if="item.asset === null">
-                    mdi-folder
-                  </template>
-                  <template v-else>
-                    mdi-file
-                  </template>
-                </v-icon>
-                {{ item.name }}
-                <v-spacer />
-
-                <v-list-item-action>
-                  <v-btn
-                    v-if="showDelete(item)"
-                    icon
-                    @click="setItemToDelete(item)"
+                <template #prepend>
+                  <v-icon
+                    class="mr-2"
+                    color="primary"
                   >
-                    <v-icon color="error">
-                      mdi-delete
-                    </v-icon>
-                  </v-btn>
-                </v-list-item-action>
-
-                <v-list-item-action v-if="item.asset">
-                  <v-tooltip top>
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn
-                        icon
-                        :href="inlineURI(item.asset.asset_id)"
-                        v-bind="attrs"
-                        v-on="on"
-                      >
-                        <v-icon color="primary">
-                          mdi-open-in-app
-                        </v-icon>
-                      </v-btn>
+                    <template v-if="item.asset === null">
+                      mdi-folder
                     </template>
-                    <span>Open asset in browser (you can also click on the item itself)</span>
-                  </v-tooltip>
-                </v-list-item-action>
-                <v-list-item-action v-if="item.asset">
-                  <v-tooltip top>
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn
-                        icon
-                        :href="downloadURI(item.asset.asset_id)"
-                        v-bind="attrs"
-                        v-on="on"
-                      >
-                        <v-icon color="primary">
-                          mdi-download
-                        </v-icon>
-                      </v-btn>
+                    <template v-else>
+                      mdi-file
                     </template>
-                    <span>Download asset</span>
-                  </v-tooltip>
-                </v-list-item-action>
+                  </v-icon>
+                  {{ item.name }}
+                </template>
 
-                <v-list-item-action v-if="item.asset">
-                  <v-tooltip top>
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn
-                        icon
-                        :href="assetMetadataURI(item.asset.asset_id)"
-                        target="_blank"
-                        rel="noreferrer"
-                        v-bind="attrs"
-                        v-on="on"
-                      >
-                        <v-icon color="primary">
-                          mdi-information
-                        </v-icon>
-                      </v-btn>
-                    </template>
-                    <span>View asset metadata</span>
-                  </v-tooltip>
-                </v-list-item-action>
+                <template #append>
+                  <v-list-item-action>
+                    <v-btn
+                      v-if="showDelete(item)"
+                      icon
+                      variant="text"
+                      @click.stop="setItemToDelete(item)"
+                    >
+                      <v-icon color="error">
+                        mdi-delete
+                      </v-icon>
+                    </v-btn>
+                  </v-list-item-action>
 
-                <v-list-item-action v-if="item.asset">
-                  <v-menu
-                    v-model="menuOpen[item.asset.asset_id]"
-                    bottom
-                    left
-                    close-on-content-click="false"
-                  >
-                   <template #activator="{ on, attrs }">
-                      <v-btn
-                        v-if="item.asset.s3_uri"
-                        color="primary"
-                        icon
-                        title="Links"
-                        v-bind="attrs"
-                        v-on="on"
-                      >
-                        <v-icon>mdi-content-copy</v-icon>
-                      </v-btn>
-                      <v-btn
-                        v-else
-                        color="primary"
-                        disabled
-                        icon
-                      >
-                        <v-icon>mdi-content-copy</v-icon>
-                      </v-btn>
-                    </template>
-                    <v-list
-                      dense
-                    >
-                      <v-subheader
-                        class="font-weight-medium"
-                      >
-                        LINKS
-                      </v-subheader>
-                      <v-list-item
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <v-list-item-title class="font-weight-light">
-                          AWS S3 URI <span v-if="copied" style="color: green; padding-left: 8px; padding-right: 8px; margin-left: 16px;">Copied!</span>
-                        </v-list-item-title>
-                        <v-spacer></v-spacer>
-                        <v-icon @click.stop="copyToClipboard(item.asset?.s3_uri)">mdi-content-copy</v-icon>
-                      </v-list-item>
-                    </v-list>
-                  </v-menu>
-                </v-list-item-action>
-                <v-list-item-action v-if="item.asset">
-                  <v-menu
-                    bottom
-                    left
-                  >
-                    <template #activator="{ on, attrs }">
-                      <v-btn
-                        color="primary"
-                        x-small
-                        :disabled="!item.services || !item.services.length"
-                        v-bind="attrs"
-                        v-on="on"
-                      >
-                        Open With <v-icon small>mdi-menu-down</v-icon>
-                      </v-btn>
-                    </template>
-                    <v-list
-                      v-if="item && item.services"
-                      dense
-                    >
-                      <v-subheader
-                        v-if="item.services.length"
-                        class="font-weight-medium"
-                      >
-                        EXTERNAL SERVICES
-                      </v-subheader>
-                      <v-list-item
-                        v-for="el in item.services"
-                        :key="el.name"
-                        @click="el.isNeuroglancer ? redirectToNeuroglancerUrl(item) : null"
-                        :href="!el.isNeuroglancer ? el.url : null"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <v-list-item-title class="font-weight-light">
-                          {{ el.name }}
-                        </v-list-item-title>
-                      </v-list-item>
-                    </v-list>
-                  </v-menu>
-                </v-list-item-action>
+                  <v-list-item-action v-if="item.asset">
+                    <v-tooltip location="top">
+                      <template #activator="{ props: openInBtnProps }">
+                        <v-btn
+                          icon
+                          variant="text"
+                          :href="inlineURI(item.asset.asset_id)"
+                          v-bind="openInBtnProps"
+                        >
+                          <v-icon color="primary">
+                            mdi-open-in-app
+                          </v-icon>
+                        </v-btn>
+                      </template>
+                      <span>Open asset in browser (you can also click on the item itself)</span>
+                    </v-tooltip>
+                  </v-list-item-action>
 
-                <v-list-item-action
-                  v-if="item.asset"
-                  class="px-2"
-                >
-                  <v-menu
-                    bottom
-                    left
-                  >
-                    <template #activator="{ on, attrs }">
-                      <v-btn
-                        color="success"
-                        x-small
-                        :disabled="!item.asset.webknossos_info || !item.asset.webknossos_info?.length"
-                        v-bind="attrs"
-                        v-on="on"
-                      >
-                        WebKNOSSOS <v-icon small>mdi-menu-down</v-icon>
-                      </v-btn>
-                    </template>
-                    <v-list
-                      v-if="item && item.asset.webknossos_info"
-                      dense
-                    >
-                      <v-subheader
-                        v-if="item.asset.webknossos_info"
-                        class="font-weight-medium"
-                      >
-                        WEBKNOSSOS DATASETS CONTAINING ASSET
-                      </v-subheader>
-                      <v-list-item
-                        v-for="el in item.asset.webknossos_info"
-                        :key="item.asset.s3_uri"
-                        @click.stop.prevent="el ? handleWebKnossosClick(el.webknossos_url) : null"
-                        :href="el.webknossos_url ? el.webknossos_url : null"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <v-list-item-title class="font-weight-light">
-                          {{ el.webknossos_name ? el.webknossos_name : "No datasets associated" }}
-                        </v-list-item-title>
-                      </v-list-item>
-                    </v-list>
-                    <v-list v-if="item && item.asset.webknossos_info" dense>
-                    <v-subheader
-                      v-if="item.asset.webknossos_info.some(dataset => dataset.webknossos_annotations && dataset.webknossos_annotations.length > 0)"
-                      class="font-weight-medium"
-                    >
-                      WEBKNOSSOS ANNOTATIONS CONTAINING ASSET
-                    </v-subheader>
+                  <v-list-item-action v-if="item.asset">
+                    <v-tooltip location="top">
+                      <template #activator="{ props: downloadProps }">
+                        <v-btn
+                          icon
+                          variant="text"
+                          :href="downloadURI(item.asset.asset_id)"
+                          v-bind="downloadProps"
+                        >
+                          <v-icon color="primary">
+                            mdi-download
+                          </v-icon>
+                        </v-btn>
+                      </template>
+                      <span>Download asset</span>
+                    </v-tooltip>
+                  </v-list-item-action>
 
-                    <!-- Check if the list has no datasets or annotations -->
-                    <v-subheader
-                      v-else
-                      class="font-weight-medium"
-                    >
-                      No annotations associated
-                    </v-subheader>
+                  <v-list-item-action v-if="item.asset">
+                    <v-tooltip location="top">
+                      <template #activator="{ props: infoProps }">
+                        <v-btn
+                          icon
+                          variant="text"
+                          :href="assetMetadataURI(item.asset.asset_id)"
+                          target="_blank"
+                          rel="noreferrer"
+                          v-bind="infoProps"
+                          @click.stop
+                        >
+                          <v-icon color="primary">
+                            mdi-information
+                          </v-icon>
+                        </v-btn>
+                      </template>
+                      <span>View asset metadata</span>
+                    </v-tooltip>
+                  </v-list-item-action>
 
-                    <!-- Iterate over each dataset -->
-                    <v-list-item-group
-                      v-for="dataset in item.asset.webknossos_info"
-                      :key="dataset.webknossos_name"
-                      class="mb-3"
+                  <v-list-item-action v-if="item.asset">
+                    <v-menu
+                      location="bottom left"
                     >
-                      <v-list dense v-if="dataset.webknossos_annotations && dataset.webknossos_annotations.length > 0">
+                      <template #activator="{ props: openWithProps }">
+                        <v-btn
+                          color="primary"
+                          size="x-small"
+                          :disabled="!item.services || !item.services.length"
+
+                          v-bind="openWithProps"
+                        >
+                          Open With <v-icon size="small">
+                            mdi-menu-down
+                          </v-icon>
+                        </v-btn>
+                      </template>
+                      <v-list
+                        v-if="item && item.services"
+                        density="compact"
+                      >
+                        <v-list-subheader
+                          v-if="item.services.length"
+                          class="font-weight-medium"
+                        >
+                          EXTERNAL SERVICES
+                        </v-list-subheader>
+
                         <v-list-item
-                          v-for="annotation in dataset.webknossos_annotations"
-                          :key="annotation.webknossos_annotation_url"
-                          @click="annotation ? handleWebKnossosClick(annotation.webknossos_annotation_url) : null"
-                          :href="annotation.webknossos_annotation_url ? annotation.webknossos_annotation_url : null"
+                          v-for="el in item.services"
+                          :key="el.name"
+                          :href="el.url"
                           target="_blank"
                           rel="noreferrer"
                         >
                           <v-list-item-title class="font-weight-light">
-                            {{ annotation.webknossos_annotation_name.trim() !== '' ? (annotation.webknossos_annotation_name + (annotation.webknossos_annotation_author ? ' by ' + annotation.webknossos_annotation_author : '')) : 'annotation untitled by ' + annotation.webknossos_annotation_author }}
+                            {{ el.name }}
                           </v-list-item-title>
                         </v-list-item>
                       </v-list>
-                    </v-list-item-group>
+                    </v-menu>
+                  </v-list-item-action>
 
-                  </v-list>
-                  </v-menu>
-                </v-list-item-action>
-
-                <v-list-item-action
-                  v-if="item.aggregate_size"
-                  class="justify-end"
-                  :style="{width: '4.5em'}"
-                >
-                  {{ fileSize(item) }}
-                </v-list-item-action>
+                  <v-list-item-action
+                    v-if="item.aggregate_size"
+                    class="justify-end"
+                    :style="{width: '4.5em'}"
+                  >
+                    {{ fileSize(item) }}
+                  </v-list-item-action>
+                </template>
               </v-list-item>
             </v-list>
           </v-card>
@@ -389,7 +266,7 @@
         v-if="currentDandiset.asset_count"
         :page="page"
         :page-count="pages"
-        @changePage="changePage($event)"
+        @change-page="changePage($event)"
       />
     </v-container>
   </div>
@@ -400,9 +277,9 @@ import type { Ref } from 'vue';
 import {
   computed, onMounted, ref, watch,
 } from 'vue';
-import type { RawLocation } from 'vue-router';
-import { useRouter, useRoute } from 'vue-router/composables';
-import filesize from 'filesize';
+import type { RouteLocationRaw } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import { filesize } from 'filesize';
 import { trimEnd } from 'lodash';
 import axios from 'axios';
 
@@ -419,13 +296,11 @@ const FILES_PER_PAGE = 15;
 interface AssetService {
   name: string,
   url: string,
-  isNeuroglancer?: boolean
 }
 
 interface ExtendedAssetPath extends AssetPath {
   services?: AssetService[];
   name: string;
-  s3_uri?: string;
 }
 
 const sortByFolderThenName = (a: ExtendedAssetPath, b: ExtendedAssetPath) => {
@@ -450,44 +325,53 @@ const sortByFolderThenName = (a: ExtendedAssetPath, b: ExtendedAssetPath) => {
 };
 
 const EXTERNAL_SERVICES = [
-  // {
-  //   name: 'Bioimagesuite/Viewer',
-  //   regex: /\.nii(\.gz)?$/,
-  //   maxsize: 1e9,
-  //   endpoint: 'https://bioimagesuiteweb.github.io/unstableapp/viewer.html?image=$asset_url$',
-  // },
-  //
-  // {
-  //   name: 'MetaCell/NWBExplorer',
-  //   regex: /\.nwb$/,
-  //   maxsize: 1e9,
-  //   endpoint: 'http://nwbexplorer.opensourcebrain.org/nwbfile=$asset_url$',
-  // },
-  //
-  // {
-  //   name: 'VTK/ITK Viewer',
-  //   regex: /\.ome\.zarr$/,
-  //   maxsize: Infinity,
-  //   endpoint: 'https://kitware.github.io/itk-vtk-viewer/app/?gradientOpacity=0.3&image=$asset_url$',
-  // },
-  //
-  // {
-  //   name: 'OME Zarr validator',
-  //   regex: /\.ome\.zarr$/,
-  //   maxsize: Infinity,
-  //   endpoint: 'https://ome.github.io/ome-ngff-validator/?source=$asset_url$',
-  // },
-  // {
-  //   name: 'Neurosift',
-  //   regex: /\.nwb$/,
-  //   maxsize: Infinity,
-  //   endpoint: 'https://flatironinstitute.github.io/neurosift?p=/nwb&url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$', // eslint-disable-line max-len
-  // },
   {
-    name: 'Neuroglancer',
-    regex: /\.(nwb|txt|nii(\.gz)?|ome\.zarr)$/,  // TODO: .txt for testing purposes
+    name: 'Bioimagesuite/Viewer',
+    regex: /\.nii(\.gz)?$/,
+    maxsize: 1e9,
+    endpoint: 'https://bioimagesuiteweb.github.io/unstableapp/viewer.html?image=$asset_url$',
+  },
+
+  {
+    name: 'MetaCell/NWBExplorer',
+    regex: /\.nwb$/,
+    maxsize: 1e9,
+    endpoint: 'http://nwbexplorer.opensourcebrain.org/nwbfile=$asset_url$',
+  },
+
+  {
+    name: 'VTK/ITK Viewer',
+    regex: /\.ome\.zarr$/,
     maxsize: Infinity,
-    endpoint: 'value-defaults-to-endpoint-logic'
+    endpoint: 'https://kitware.github.io/itk-vtk-viewer/app/?gradientOpacity=0.3&image=$asset_url$',
+  },
+
+  {
+    name: 'OME Zarr validator',
+    regex: /\.ome\.zarr$/,
+    maxsize: Infinity,
+    endpoint: 'https://ome.github.io/ome-ngff-validator/?source=$asset_url$',
+  },
+
+  {
+    name: 'Neurosift',
+    regex: /\.nwb$/,
+    maxsize: Infinity,
+    endpoint: 'https://neurosift.app/nwb?url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
+  },
+
+  {
+    name: 'Neurosift',
+    regex: /\.nwb\.lindi\.(json|tar)$/,
+    maxsize: Infinity,
+    endpoint: 'https://neurosift.app/nwb?url=$asset_dandi_url$&st=lindi&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
+  },
+
+  {
+    name: 'Neurosift',
+    regex: /\.avi$/,
+    maxsize: Infinity,
+    endpoint: 'https://v1.neurosift.app?p=/avi&url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
   }
 ];
 type Service = typeof EXTERNAL_SERVICES[0];
@@ -513,12 +397,12 @@ const items: Ref<ExtendedAssetPath[] | null> = ref(null);
 // Value is the asset id of the item to delete
 const itemToDelete: Ref<AssetPath | null> = ref(null);
 
+const deletePopupOpen = ref(false);
+
 const page = ref(1);
 const pages = ref(0);
 const updating = ref(false);
-const copied = ref(false);
 
-const menuOpen = ref<Record<string, boolean>>({});
 // Computed
 const owners = computed(() => store.owners?.map((u) => u.username) || null);
 const currentDandiset = computed(() => store.dandiset);
@@ -530,8 +414,6 @@ const isOwner = computed(() => !!(
   user.value && owners.value?.includes(user.value?.username)
 ));
 const itemsNotFound = computed(() => items.value && !items.value.length);
-
-console.log(items)
 
 function serviceURL(endpoint: string, data: {
   dandisetId: string,
@@ -547,40 +429,6 @@ function serviceURL(endpoint: string, data: {
     .replaceAll('$asset_dandi_url$', data.assetDandiUrl)
     .replaceAll('$asset_s3_url$', data.assetS3Url);
 }
-
-async function redirectToNeuroglancerUrl(item: any) {
-  try {
-    const url = 'https://api.lincbrain.org/api/permissions/s3/' + item.asset.url; // Directly appending
-    const response = await fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    const data = await response.json();
-    window.open(data.full_url, "_blank");
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  }
-}
-
-function copyToClipboard(s3Uri?: string) {
-  if (s3Uri) {
-    navigator.clipboard.writeText(s3Uri).then(() => {
-      copied.value = true;
-      setTimeout(() => {
-        copied.value = false;
-      }, 2000);
-    }).catch(err => {
-      console.error('Failed to copy text: ', err)
-    });
-  } else {
-    console.error('No S3 URI found')
-  }
-}
-
-
 
 function getExternalServices(path: AssetPath, info: {dandisetId: string, dandisetVersion: string}) {
   if (path.asset === null) {
@@ -615,7 +463,6 @@ function getExternalServices(path: AssetPath, info: {dandisetId: string, dandise
         assetDandiUrl,
         assetS3Url,
       }),
-      isNeuroglancer: service.name === 'Neuroglancer',
     }));
 }
 
@@ -701,6 +548,7 @@ async function getItems() {
 
 function setItemToDelete(item: AssetPath) {
   itemToDelete.value = item;
+  deletePopupOpen.value = true;
 }
 
 async function deleteAsset() {
@@ -718,33 +566,7 @@ async function deleteAsset() {
   // Recompute the items to display in the browser.
   getItems();
   itemToDelete.value = null;
-}
-
-function getCookie(name: string): string | null {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-
-  if (parts.length === 2) {
-    const part = parts.pop();
-    if (part) {
-      return part.split(';').shift() || null;
-    }
-  }
-  return null;
-}
-
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function handleWebKnossosClick(url: string) {
-  const response = await fetch('https://api.lincbrain.org/api/external-api/login/webknossos/', {
-    method: 'GET', // or 'POST' if that's what the API requires
-    credentials: 'include' // to ensure cookies are sent and received
-  });
-  await response.json();
-  await sleep(1000); // Wait for WebKNOSSOS login to finalize, since round trip is longer
-  window.open(url, '_blank');
+  deletePopupOpen.value = false;
 }
 
 // Update URL if location changes
@@ -759,7 +581,7 @@ watch(location, () => {
   router.push({
     ...route,
     query: { location: location.value, page: String(page.value) },
-  } as RawLocation);
+  } as RouteLocationRaw);
 });
 
 // go to the directory specified in the URL if it changes
@@ -779,7 +601,7 @@ function changePage(newPage: number) {
   router.push({
     ...route,
     query: { location: location.value, page: String(page.value) },
-  } as RawLocation);
+  } as RouteLocationRaw);
 }
 
 // Fetch dandiset if necessary

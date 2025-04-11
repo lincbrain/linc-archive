@@ -2,21 +2,21 @@
   <div>
     <v-card
       v-if="contributors && contributors.length"
-      outlined
+      variant="outlined"
       height="100%"
     >
       <v-card-title class="font-weight-regular">
-        <v-icon class="mr-3 grey--text text--lighten-1">
+        <v-icon class="mr-3 text-grey-lighten-1">
           mdi-account-multiple
         </v-icon>
         Contributors
       </v-card-title>
-      <div class="px-2 mb-2">
+      <v-list class="px-2 mb-2">
         <v-chip
           v-for="(contributor, i) in contributors"
           :key="i"
           style="margin: 5px;"
-          outlined
+          variant="outlined"
         >
           {{ contributor.name }}
           <a
@@ -40,9 +40,8 @@
             <v-icon color="info">mdi-card-account-mail</v-icon>
           </a>
         </v-chip>
-      </div>
+      </v-list>
     </v-card>
-
     <MetadataCard
       :items="fundingInformation"
       name="Funding information"
@@ -50,7 +49,7 @@
     >
       <template #content="slotProps">
         <div
-          class="text-caption grey--text text--darken-1"
+          class="text-caption text-grey-darken-1"
         >
           <span
             v-if="slotProps.item.awardNumber"
@@ -68,6 +67,25 @@
     </MetadataCard>
 
     <MetadataCard
+      v-if="protocols && protocols.length"
+      :items="protocols"
+      name="Protocols"
+      icon="mdi-file-document-check"
+    >
+      <template #content="slotProps">
+        <div class="text-caption text-grey-darken-1">
+          <a
+            :href="slotProps.item"
+            target="_blank"
+            rel="noopener"
+          >
+            {{ slotProps.item }}
+          </a>
+        </div>
+      </template>
+    </MetadataCard>
+
+    <MetadataCard
       v-if="relatedResources && relatedResources.length"
       :items="relatedResources"
       name="Related resources"
@@ -76,21 +94,28 @@
       <template #content="slotProps">
         <span
           v-if="slotProps.item.identifier"
-          class="text-caption grey--text text--darken-1 related-resource"
+          class="text-caption text-grey-darken-1 related-resource"
         >
           <strong>ID: </strong>{{ slotProps.item.identifier }}
           <br>
         </span>
         <span
+          v-if="slotProps.item.resourceType"
+          class="text-caption text-grey-darken-1"
+        >
+          <strong>Resource Type: </strong>{{ slotProps.item.resourceType }}
+          <br>
+        </span>
+        <span
           v-if="slotProps.item.repository"
-          class="text-caption grey--text text--darken-1"
+          class="text-caption text-grey-darken-1"
         >
           <strong>Repo: </strong>{{ slotProps.item.repository }}
           <br>
         </span>
         <span
           v-if="slotProps.item.relation"
-          class="text-caption grey--text text--darken-1"
+          class="text-caption text-grey-darken-1"
         >
           <strong>Relation: </strong>{{ slotProps.item.relation }}
         </span>
@@ -99,6 +124,7 @@
         <v-btn
           v-if="slotProps.item.url"
           icon
+          variant="text"
           :href="slotProps.item.url"
           target="_blank"
           rel="noopener"
@@ -110,7 +136,7 @@
 
     <v-card
       v-if="assetSummary"
-      outlined
+      variant="outlined"
     >
       <v-card-title class="font-weight-regular">
         <v-progress-circular
@@ -121,7 +147,7 @@
         />
         <v-icon
           v-else
-          class="mr-3 grey--text text--lighten-1"
+          class="mr-3 text-grey-lighten-1"
         >
           mdi-clipboard-list
         </v-icon>
@@ -140,9 +166,8 @@
         <div
           v-else-if="!assetSummary || !Object.keys(assetSummary).length"
           class="font-italic font-weight-bold"
-        >
-          This Dataset does not contain any assets.
-        </div>
+          v-text="`This dataset does not contain any valid assets.${currentDandiset?.asset_validation_errors.length ? ' Please check the asset validation errors on the right panel.' : ''}`"
+        />
         <div
           v-for="([type, items], i) in Object.entries(assetSummary)"
           v-else
@@ -161,13 +186,13 @@
               :key="ii"
               :title="type"
               background-color="grey lighten-4"
-              class="grey lighten-4"
+              class="bg-grey-lighten-4"
               style="width: 100%;"
             >
               <div
                 class="pl-2 my-1 py-1"
-                :style="`border-left: medium solid ${$vuetify.theme.themes.light.primary};
-                         line-height: 1.25`"
+                :style="`border-left: medium solid ${theme.current.value.colors.primary};
+                            line-height: 1.25`"
               >
                 <v-row
                   no-gutters
@@ -183,6 +208,7 @@
                     <v-btn
                       v-if="isURL(item.identifier)"
                       icon
+                      variant="text"
                       :href="item.identifier"
                       target="_blank"
                       rel="noopener"
@@ -193,7 +219,7 @@
                 </v-row>
                 <span
                   v-if="!isURL(item.identifier)"
-                  class="text-caption grey--text text--darken-1"
+                  class="text-caption text-grey-darken-1"
                 >
                   {{ item.identifier }}
                 </span>
@@ -213,7 +239,7 @@
       <template #content="slotProps">
         <span
           v-if="slotProps.item.identifier"
-          class="text-caption grey--text text--darken-1 related-resource"
+          class="text-caption text-grey-darken-1 related-resource"
         >
           <strong>Identifier: </strong>{{ slotProps.item.identifier }}
           <br>
@@ -224,15 +250,14 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed, getCurrentInstance, onMounted, onUnmounted,
-} from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
+import { useDisplay, useTheme } from 'vuetify';
 
 import MetadataCard from '@/components/DLP/MetadataCard.vue';
 import { useDandisetStore } from '@/stores/dandiset';
 
 import type { ComputedRef, PropType } from 'vue';
-import type { AssociatedProjects, DandisetMetadata, RelatedResource } from '@/types';
+import type { AssociatedProjects, DandisetMetadata, RelatedResource, Protocol } from '@/types';
 
 // Asset summary fields to hide
 const ASSET_SUMMARY_BLACKLIST = new Set([
@@ -248,7 +273,7 @@ function isURL(str: string): boolean {
   let url;
   try {
     url = new URL(str);
-  } catch (e) {
+  } catch {
     return false;
   }
 
@@ -266,7 +291,8 @@ const props = defineProps({
   },
 });
 
-const $vuetify = computed(() => getCurrentInstance()?.proxy.$vuetify);
+const theme = useTheme();
+const display = useDisplay();
 
 const store = useDandisetStore();
 const currentDandiset = computed(() => store.dandiset);
@@ -286,6 +312,10 @@ const fundingInformation = computed(
 
 const relatedResources: ComputedRef<RelatedResource|undefined> = computed(
   () => props.meta.relatedResource,
+);
+
+const protocols: ComputedRef<Protocol|undefined> = computed(
+  () => props.meta.protocol,
 );
 
 const associatedProjects: ComputedRef<AssociatedProjects|undefined> = computed(
@@ -309,7 +339,7 @@ const assetSummary = computed<Record<string, any>>(
 
 // Approximate a good column count for asset summary card
 const assetSummaryColumnCount = computed(
-  () => ($vuetify.value?.breakpoint.mdAndDown ? 1
+  () => (display.mdAndDown.value ? 1
     : Math.min(Object.keys(assetSummary.value).length, 3)),
 );
 
