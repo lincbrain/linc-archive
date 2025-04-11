@@ -1,50 +1,45 @@
 <template>
-  <v-menu
-    offset-y
-    left
-  >
-    <template
-      #activator="{ on, attrs }"
-    >
+  <v-menu location="left">
+    <template #activator="{ props }">
       <v-btn
         id="external-dandiset-services"
-        outlined
+        variant="outlined"
         block
-        v-bind="attrs"
-        v-on="on"
+        class="justify-space-between"
+        v-bind="props"
       >
-        <v-icon
-          color="primary"
-          left
-        >
-          mdi-web
-        </v-icon>
-        <span>Open with</span>
-        <v-spacer />
-        <v-icon right>
-          mdi-chevron-down
-        </v-icon>
+        <template #prepend>
+          <v-icon
+            color="primary"
+            start
+          >
+            mdi-web
+          </v-icon>
+          <span>Open with</span>
+        </template>
+        <template #append>
+          <v-icon end>
+            mdi-chevron-down
+          </v-icon>
+        </template>
       </v-btn>
     </template>
-    <v-card
-    >
+    <v-card>
       <v-list>
         <v-tooltip
           open-on-hover
-          left
+          location="left"
         >
-          <template #activator="{ on }">
-            <div
-            v-on="on"
-            >
+          <template #activator="{ props }">
+            <div v-bind="props">
               <v-list-item
                 :href="neurosiftURL"
                 target="_blank"
               >
                 <v-icon
                   color="primary"
-                  left
-                  small
+                  start
+                  size="small"
                 >
                   mdi-web
                 </v-icon>
@@ -84,14 +79,7 @@ const neurosiftURL = computed(() => {
   const dandisetVersion = metadata.version;
   const stagingParam = metadata.url!.startsWith('https://gui-staging.dandiarchive.org/') ? '&staging=1' : '';
 
-  return `https://neurosift.app/?p=/dandiset&dandisetId=${dandisetId}&dandisetVersion=${dandisetVersion}${stagingParam}`;
+  return `https://neurosift.app/dandiset/${dandisetId}?dandisetVersion=${dandisetVersion}${stagingParam}`;
 });
 
 </script>
-<style scoped>
-.v-btn--outlined {
-  border: thin solid #E0E0E0;
-  color: #424242;
-  font-weight: 400;
-}
-</style>

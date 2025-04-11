@@ -4,8 +4,8 @@ from rest_framework import status
 
 
 class DandiError(Exception):
-    message: str | None
-    http_status_code: int | None
+    message: str | None = None
+    http_status_code: int | None = None
 
     def __init__(
         self, message: str | None = None, http_status_code: int | None = None, *args: object
@@ -19,6 +19,11 @@ class DandiError(Exception):
 class NotAllowedError(DandiError):
     message = 'Action not allowed'
     http_status_code = status.HTTP_403_FORBIDDEN
+
+
+class NotAuthenticatedError(DandiError):
+    message = 'Action requires authentication.'
+    http_status_code = status.HTTP_401_UNAUTHORIZED
 
 
 class AdminOnlyOperationError(DandiError):

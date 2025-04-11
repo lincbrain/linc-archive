@@ -6,15 +6,14 @@
     <v-row>
       <v-img
         :src="logo"
-        class="grey lighten-5"
+        class="bg-grey-lighten-5"
         position="left"
         max-height="500px"
-        contain
       >
         <v-container
           fluid
           class="d-flex flex-column py-0"
-          :class="[$vuetify.breakpoint.smAndUp ? 'brain-gradient' : 'hide-brain']"
+          :class="[isSmAndUpDisplay ? 'brain-gradient' : 'hide-brain']"
         >
           <v-row
             class="flex-grow-1"
@@ -22,7 +21,7 @@
             align="center"
           >
             <v-col class="splash-text my-12">
-              <div class="text-h2 font-weight-thin text-center light-blue--text text--darken-1">
+              <div class="text-h2 font-weight-thin text-center text-light-blue-darken-1">
                 LINC Data Platform
               </div>
               <br>
@@ -44,11 +43,15 @@
 </template>
 
 <script setup lang="ts">
-import { watchEffect } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
+import { computed, watchEffect } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useDisplay } from 'vuetify';
 import StatsBar from '@/views/HomeView/StatsBar.vue';
 import DandisetSearchField from '@/components/DandisetSearchField.vue';
 import logo from '@/assets/linc-logo.svg';
+
+const display = useDisplay();
+const isSmAndUpDisplay = computed(() => display.smAndUp.value);
 
 /**
 * Redirect old hash URLS to the correct one. This is only done on
@@ -58,7 +61,7 @@ const router = useRouter();
 const currentRoute = useRoute();
 watchEffect(() => {
   if (currentRoute.hash) {
-    const trimmed = router.currentRoute.hash.replace('#', '');
+    const trimmed = router.currentRoute.value.hash.replace('#', '');
     router.replace(trimmed);
   }
 });

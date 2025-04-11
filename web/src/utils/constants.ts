@@ -1,5 +1,5 @@
 const dandiUrl = 'https://dandiarchive.org';
-const dandiAboutUrl = 'https://www.dandiarchive.org/';
+const dandiAboutUrl = 'https://about.dandiarchive.org/';
 const lincBrainUrl = "https://connects.mgh.harvard.edu/";
 const lincDocumentationUrl = 'https://docs.lincbrain.org/';
 const lincHelpUrl = 'https://docs.lincbrain.org/#support';
@@ -48,6 +48,10 @@ const sortingOptions = [
   {
     name: 'Size',
     djangoField: 'size',
+  },
+  {
+    name: 'Stars',
+    djangoField: 'stars',
   },
 ];
 

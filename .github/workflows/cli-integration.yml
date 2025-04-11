@@ -19,6 +19,11 @@ jobs:
 
       - name: Build Docker image
         run: |
+          if [ -n "$DOCKER_LOGIN$DOCKER_TOKEN" ]; then
+              docker login -u "$DOCKER_LOGIN" --password-stdin <<<"$DOCKER_TOKEN"
+          else
+              echo "Not logging in to docker since no credentials were provided, might hit limits below"
+          fi
           docker build \
             -t lincbrain/dandiarchive-api \
             -f dev/django-public.Dockerfile \
@@ -80,8 +85,8 @@ jobs:
 
       - name: Run dandi-api tests in linc-cli
         run: |
-          python -m pytest --dandi-api \
-            "$pythonLocation/lib/python${{ matrix.python }}/site-packages/lincbrain"
+          python -m pytest --dandi-api -v \
+            "$pythonLocation/lib/python${{ matrix.python }}/site-packages/dandi"
         env:
           DANDI_TESTS_PERSIST_DOCKER_COMPOSE: "1"
 

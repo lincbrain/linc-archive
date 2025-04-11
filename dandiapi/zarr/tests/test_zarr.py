@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from django.conf import settings
-from guardian.shortcuts import assign_perm
 import pytest
 from zarr_checksum.checksum import EMPTY_CHECKSUM
 
 from dandiapi.api.models.dandiset import Dandiset
+from dandiapi.api.services.permissions.dandiset import (
+    add_dandiset_owner,
+    get_dandiset_owners,
+    replace_dandiset_owners,
+)
 from dandiapi.api.tests.fuzzy import UUID_RE
 from dandiapi.zarr.models import ZarrArchive, ZarrArchiveStatus
 from dandiapi.zarr.tasks import ingest_zarr_archive
@@ -13,7 +17,7 @@ from dandiapi.zarr.tasks import ingest_zarr_archive
 
 @pytest.mark.django_db
 def test_zarr_rest_create(authenticated_api_client, user, dandiset):
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
     name = 'My Zarr File!'
 
     resp = authenticated_api_client.post(
@@ -41,7 +45,7 @@ def test_zarr_rest_create(authenticated_api_client, user, dandiset):
 
 @pytest.mark.django_db
 def test_zarr_rest_dandiset_malformed(authenticated_api_client, user, dandiset):
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
     resp = authenticated_api_client.post(
         '/api/zarr/',
         {
@@ -69,7 +73,7 @@ def test_zarr_rest_create_not_an_owner(authenticated_api_client, zarr_archive):
 
 @pytest.mark.django_db
 def test_zarr_rest_create_duplicate(authenticated_api_client, user, zarr_archive):
-    assign_perm('owner', user, zarr_archive.dandiset)
+    add_dandiset_owner(zarr_archive.dandiset, user)
     resp = authenticated_api_client.post(
         '/api/zarr/',
         {
@@ -90,7 +94,7 @@ def test_zarr_rest_create_embargoed_dandiset(
     dandiset_factory,
 ):
     dandiset = dandiset_factory(embargo_status=Dandiset.EmbargoStatus.EMBARGOED)
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
     resp = authenticated_api_client.post(
         '/api/zarr/',
         {
@@ -100,6 +104,27 @@ def test_zarr_rest_create_embargoed_dandiset(
         format='json',
     )
     assert resp.status_code == 200
+
+    # Ensure this zarr is embargoed
+    zarr = ZarrArchive.objects.get(zarr_id=resp.json()['zarr_id'])
+    assert zarr.embargoed
+
+
+@pytest.mark.django_db
+def test_zarr_rest_create_unembargoing(
+    authenticated_api_client, user, zarr_archive, dandiset_factory
+):
+    dandiset = dandiset_factory(embargo_status=Dandiset.EmbargoStatus.UNEMBARGOING)
+    add_dandiset_owner(dandiset, user)
+    resp = authenticated_api_client.post(
+        '/api/zarr/',
+        {
+            'name': zarr_archive.name,
+            'dandiset': dandiset.identifier,
+        },
+        format='json',
+    )
+    assert resp.status_code == 400
 
 
 @pytest.mark.django_db
@@ -128,29 +153,38 @@ def test_zarr_rest_get(authenticated_api_client, storage, zarr_archive_factory, 
 
 
 @pytest.mark.django_db
-def test_zarr_rest_get_embargoed(authenticated_api_client, user, embargoed_zarr_archive):
-    assert user not in embargoed_zarr_archive.dandiset.owners
+def test_zarr_rest_get_embargoed(
+    authenticated_api_client, user, embargoed_zarr_archive_factory, dandiset_factory
+):
+    dandiset = dandiset_factory(embargo_status=Dandiset.EmbargoStatus.EMBARGOED)
+    embargoed_zarr_archive = embargoed_zarr_archive_factory(dandiset=dandiset)
+    assert user not in get_dandiset_owners(embargoed_zarr_archive.dandiset)
 
     resp = authenticated_api_client.get(f'/api/zarr/{embargoed_zarr_archive.zarr_id}/')
     assert resp.status_code == 404
 
-    embargoed_zarr_archive.dandiset.set_owners([user])
+    replace_dandiset_owners(embargoed_zarr_archive.dandiset, [user])
     resp = authenticated_api_client.get(f'/api/zarr/{embargoed_zarr_archive.zarr_id}/')
     assert resp.status_code == 200
 
 
 @pytest.mark.django_db
-def test_zarr_rest_list_embargoed(authenticated_api_client, user, dandiset, zarr_archive_factory):
+def test_zarr_rest_list_embargoed(
+    authenticated_api_client, user, dandiset_factory, zarr_archive_factory
+):
+    open_dandiset = dandiset_factory(embargo_status=Dandiset.EmbargoStatus.OPEN)
+    embargoed_dandiset = dandiset_factory(embargo_status=Dandiset.EmbargoStatus.EMBARGOED)
+
     # Create some embargoed and some open zarrs
-    open_zarrs = [zarr_archive_factory() for _ in range(3)]
-    embargoed_zarrs = [zarr_archive_factory(embargoed=True, dandiset=dandiset) for _ in range(3)]
+    open_zarrs = [zarr_archive_factory(dandiset=open_dandiset) for _ in range(3)]
+    embargoed_zarrs = [zarr_archive_factory(dandiset=embargoed_dandiset) for _ in range(3)]
 
     # Assert only open zarrs are returned
     zarrs = authenticated_api_client.get('/api/zarr/').json()['results']
     assert sorted(z['zarr_id'] for z in zarrs) == sorted(z.zarr_id for z in open_zarrs)
 
     # Assert that all zarrs returned when user has access to embargoed zarrs
-    dandiset.set_owners([user])
+    replace_dandiset_owners(embargoed_dandiset, [user])
     zarrs = authenticated_api_client.get('/api/zarr/').json()['results']
     assert len(zarrs) == len(open_zarrs + embargoed_zarrs)
     assert sorted(z['zarr_id'] for z in zarrs) == sorted(
@@ -251,7 +285,7 @@ def test_zarr_rest_delete_file(
 
     # Create zarr and assign user perms
     zarr_archive = zarr_archive_factory(status=ZarrArchiveStatus.UPLOADED)
-    assign_perm('owner', user, zarr_archive.dandiset)
+    add_dandiset_owner(zarr_archive.dandiset, user)
 
     # Upload file and ingest
     zarr_file = zarr_file_factory(zarr_archive=zarr_archive)
@@ -300,7 +334,7 @@ def test_zarr_rest_delete_file_asset_metadata(
     ZarrArchive.storage = storage
 
     zarr_archive = zarr_archive_factory(status=ZarrArchiveStatus.UPLOADED)
-    assign_perm('owner', user, zarr_archive.dandiset)
+    add_dandiset_owner(zarr_archive.dandiset, user)
 
     asset = asset_factory(zarr=zarr_archive, blob=None)
 
@@ -351,7 +385,7 @@ def test_zarr_rest_delete_multiple_files(
     zarr_archive: ZarrArchive,
     zarr_file_factory,
 ):
-    assign_perm('owner', user, zarr_archive.dandiset)
+    add_dandiset_owner(zarr_archive.dandiset, user)
     # Pretend like ZarrArchive was defined with the given storage
     ZarrArchive.storage = storage
 
@@ -382,7 +416,7 @@ def test_zarr_rest_delete_missing_file(
     zarr_archive: ZarrArchive,
     zarr_file_factory,
 ):
-    assign_perm('owner', user, zarr_archive.dandiset)
+    add_dandiset_owner(zarr_archive.dandiset, user)
 
     # Pretend like ZarrArchive was defined with the given storage
     ZarrArchive.storage = storage

@@ -15,7 +15,7 @@
       </cookie-law>
       <v-row>
         <v-col offset="2">
-          &copy; 2023 - 2024 LINC<br>
+          &copy; 2023 - 2025 LINC<br>
           version
           <a
             class="version-link"
@@ -71,7 +71,6 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import CookieLaw from 'vue-cookie-law';
 
 import { dandiAboutUrl, lincBrainUrl, sentryLandingPageUrl } from '@/utils/constants';
 import { cookiesEnabled, webknossosRest } from '@/rest';
@@ -91,7 +90,7 @@ const handleWebKnossosClick = async () => {
 };
 export default defineComponent({
   name: 'DandiFooter',
-  components: { CookieLaw },
+  components: { },
   setup() {
     return {
       lincBrainUrl,

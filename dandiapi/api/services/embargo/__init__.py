@@ -7,14 +7,15 @@ from django.db import transaction
 
 from dandiapi.api.mail import send_dandiset_unembargoed_message
 from dandiapi.api.models import AssetBlob, Dandiset, Version
+from dandiapi.api.models.asset import Asset
 from dandiapi.api.services import audit
 from dandiapi.api.services.asset.exceptions import DandisetOwnerRequiredError
 from dandiapi.api.services.embargo.utils import _delete_object_tags, remove_dandiset_embargo_tags
 from dandiapi.api.services.exceptions import DandiError
 from dandiapi.api.services.metadata import validate_version_metadata
+from dandiapi.api.services.permissions.dandiset import is_dandiset_owner
 from dandiapi.api.storage import get_boto_client
 from dandiapi.api.tasks import unembargo_dandiset_task
-from dandiapi.zarr.models import ZarrArchive
 
 from .exceptions import (
     AssetBlobEmbargoedError,
@@ -47,15 +48,15 @@ def unembargo_dandiset(ds: Dandiset, user: User):
     logger.info('Removing tags...')
     remove_dandiset_embargo_tags(ds)
 
-    # Update embargoed flag on asset blobs and zarrs
+    # Set all assets to pending
+    updated_assets = Asset.objects.filter(versions__dandiset=ds).update(status=Asset.Status.PENDING)
+    # Update embargoed flag on asset blobs
+    # Zarrs have no such property as it is derived from the dandiset
     updated_blobs = AssetBlob.objects.filter(embargoed=True, assets__versions__dandiset=ds).update(
         embargoed=False
     )
-    updated_zarrs = ZarrArchive.objects.filter(
-        embargoed=True, assets__versions__dandiset=ds
-    ).update(embargoed=False)
+    logger.info('Set %s assets to PENDING', updated_assets)
     logger.info('Updated %s asset blobs', updated_blobs)
-    logger.info('Updated %s zarrs', updated_zarrs)
 
     # Set status to OPEN
     Dandiset.objects.filter(pk=ds.pk).update(embargo_status=Dandiset.EmbargoStatus.OPEN)
@@ -95,7 +96,7 @@ def kickoff_dandiset_unembargo(*, user: User, dandiset: Dandiset):
     if dandiset.embargo_status != Dandiset.EmbargoStatus.EMBARGOED:
         raise DandisetNotEmbargoedError
 
-    if not user.has_perm('owner', dandiset):
+    if not is_dandiset_owner(dandiset, user):
         raise DandisetOwnerRequiredError
 
     if dandiset.uploads.count():

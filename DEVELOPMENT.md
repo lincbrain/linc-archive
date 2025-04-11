@@ -3,7 +3,16 @@
 ## Develop with Docker (recommended quickstart)
 This is the simplest configuration for developers to start with.
 
-## Instructions for local development with front-end hot reloading
+### Initial Setup
+1. Run `docker compose pull` to ensure you have the latest versions of the service container images.
+2. Run `docker compose build --build-arg USERID=$(id -u) --build-arg GROUPID=$(id -g) --build-arg LOGIN=$(id -n -u) --build-arg GROUPNAME=$(id -n -g)` to build the development container image. This builds the image to work with your (non-root) development user so that the linting and formatting commands work inside and outside of the container. If you prefer to build the container image so that it runs as `root`, you can omit the `--build-arg` arguments (but you will likely run into trouble running those commands).
+3. Run `docker compose run --rm django ./manage.py migrate`
+4. Run `docker compose run --rm django ./manage.py createcachetable`
+5. Run `docker compose run --rm django ./manage.py createsuperuser --email $(git config user.email)`
+   and follow the prompts to create your own user.
+   This sets your username to your git email to ensure parity with how GitHub logins work. You can also replace the command substitution expression with a literal email address, or omit the `--email` option entirely to run the command in interactive mode.
+6. Run `docker compose run --rm django ./manage.py create_dev_dandiset --owner $(git config user.email)`
+   to create a dummy dandiset to start working with.
 
 1. Ensure you have installed Docker on your local machine
 2. Run `./admin_dev_startup.sh <fun-image-name-you-can-pick> <your-email>`.  When prompted, enter an username and password in the command prompt. (If you run into local errors with the script, you may need to run `chmod +x admin_dev_startup.sh` first)
@@ -13,9 +22,9 @@ This is the simplest configuration for developers to start with.
 ### Application Maintenance
 Occasionally, new package dependencies or schema changes will necessitate
 maintenance. To non-destructively update your development stack at any time:
-1. Run `docker-compose pull`
-2. Run `docker-compose build --pull --no-cache`
-3. Run `docker-compose run --rm django ./manage.py migrate`
+1. Run `docker compose pull`
+2. Run `docker compose build --pull --no-cache --build-arg USERID=$(id -u) --build-arg GROUPID=$(id -g) --build-arg LOGIN=$(id -n -u) --build-arg GROUPNAME=$(id -n -g)` (omitting the `--build-arg` arguments if you did so in Step 1 of *Initial Setup* above).
+3. Run `docker compose run --rm django ./manage.py migrate`
 
 ## Develop Natively (advanced)
 This configuration still uses Docker to run attached services in the background,
@@ -49,8 +58,8 @@ but allows developers to run Python code on their native system.
    2. `./manage.py runserver`
 3. Run in a separate terminal:
    1. `source ./dev/export-env.sh`
-   2. `celery --app dandiapi.celery worker --loglevel INFO --without-heartbeat -Q celery,calculate_sha256,ingest_zarr_archive -B`
-4. When finished, run `docker-compose stop`
+   2. `celery --app dandiapi.celery worker --loglevel INFO --without-heartbeat -Q celery,calculate_sha256,ingest_zarr_archive,manifest-worker -B`
+4. When finished, run `docker compose stop`
 
 ## Remap Service Ports (optional)
 Attached services may be exposed to the host system via alternative ports. Developers who work

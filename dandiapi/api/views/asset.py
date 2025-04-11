@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import re
+import typing
+
+from django.contrib.auth.models import User
 
 from dandiapi.api.asset_paths import search_asset_paths
 from dandiapi.api.services.asset import (
@@ -10,6 +13,11 @@ from dandiapi.api.services.asset import (
 )
 from dandiapi.api.services.asset.exceptions import DraftDandisetNotModifiableError
 from dandiapi.api.services.embargo.exceptions import DandisetUnembargoInProgressError
+from dandiapi.api.services.permissions.dandiset import (
+    is_dandiset_owner,
+    is_owned_asset,
+    require_dandiset_owner_or_403,
+)
 from dandiapi.zarr.models import ZarrArchive
 
 try:
@@ -27,10 +35,8 @@ except ImportError:
 from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
-from django.utils.decorators import method_decorator
 from django_filters import rest_framework as filters
 from drf_yasg.utils import swagger_auto_schema
-from guardian.decorators import permission_required_or_403
 from rest_framework import serializers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotAuthenticated, NotFound, PermissionDenied
@@ -97,19 +103,15 @@ class AssetViewSet(DetailSerializerMixin, GenericViewSet):
         # Clients must be authenticated to access it
         if not self.request.user.is_authenticated:
             raise NotAuthenticated
+        self.request.user = typing.cast(User, self.request.user)
 
         # Admins are allowed to access any embargoed asset blob
         if self.request.user.is_superuser:
             return
 
         # User must be an owner on any of the dandisets this asset belongs to
-        asset_dandisets = Dandiset.objects.filter(versions__in=asset.versions.all())
-        asset_dandisets_owned_by_user = DandisetUserObjectPermission.objects.filter(
-            content_object__in=asset_dandisets,
-            user=self.request.user,
-            permission__codename='owner',
-        )
-        if not asset_dandisets_owned_by_user.exists():
+        is_owned = is_owned_asset(asset, self.request.user)
+        if not is_owned:
             raise PermissionDenied
 
     def get_queryset(self):
@@ -247,7 +249,7 @@ class NestedAssetViewSet(NestedViewSetMixin, AssetViewSet, ReadOnlyModelViewSet)
             if not self.request.user.is_authenticated:
                 # Clients must be authenticated to access it
                 raise NotAuthenticated
-            if not self.request.user.has_perm('owner', version.dandiset):
+            if not is_dandiset_owner(version.dandiset, self.request.user):
                 # The user does not have ownership permission
                 raise PermissionDenied
 
@@ -325,9 +327,7 @@ class NestedAssetViewSet(NestedViewSetMixin, AssetViewSet, ReadOnlyModelViewSet)
                                User must be an owner of the specified dandiset.\
                                New assets can only be attached to draft versions.',
     )
-    @method_decorator(
-        permission_required_or_403('owner', (Dandiset, 'pk', 'versions__dandiset__pk'))
-    )
+    @require_dandiset_owner_or_403('versions__dandiset__pk')
     def create(self, request, versions__dandiset__pk, versions__version):
         version: Version = get_object_or_404(
             Version.objects.select_related('dandiset'),
@@ -361,9 +361,7 @@ class NestedAssetViewSet(NestedViewSetMixin, AssetViewSet, ReadOnlyModelViewSet)
                                Only draft versions can be modified.\
                                Old asset is returned if no updates to metadata are made.',
     )
-    @method_decorator(
-        permission_required_or_403('owner', (Dandiset, 'pk', 'versions__dandiset__pk'))
-    )
+    @require_dandiset_owner_or_403('versions__dandiset__pk')
     def update(self, request, versions__dandiset__pk, versions__version, **kwargs):
         """Create an asset with updated metadata."""
         version: Version = get_object_or_404(
@@ -396,9 +394,7 @@ class NestedAssetViewSet(NestedViewSetMixin, AssetViewSet, ReadOnlyModelViewSet)
         serializer = AssetDetailSerializer(instance=asset)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @method_decorator(
-        permission_required_or_403('owner', (Dandiset, 'pk', 'versions__dandiset__pk'))
-    )
+    @require_dandiset_owner_or_403('versions__dandiset__pk')
     @swagger_auto_schema(
         manual_parameters=[VERSIONS_DANDISET_PK_PARAM, VERSIONS_VERSION_PARAM],
         operation_summary='Remove an asset from a version.',
@@ -439,6 +435,11 @@ class NestedAssetViewSet(NestedViewSetMixin, AssetViewSet, ReadOnlyModelViewSet)
 
         # Apply filtering from included filter class first
         asset_queryset = self.filter_queryset(version.assets.all())
+
+        # Filter query to only zarr assets, if requested
+        zarr_only = serializer.validated_data['zarr']
+        if zarr_only:
+            asset_queryset = asset_queryset.filter(zarr__isnull=False)
 
         # Must do glob pattern matching before pagination
         glob_pattern: str | None = serializer.validated_data.get('glob')

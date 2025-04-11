@@ -4,17 +4,17 @@ import base64
 import hashlib
 from typing import TYPE_CHECKING
 
-from guardian.shortcuts import assign_perm
 import pytest
 
 from dandiapi.api.asset_paths import add_version_asset_paths
 from dandiapi.api.models import AuditRecord, Dandiset
 from dandiapi.api.services.metadata import validate_asset_metadata, validate_version_metadata
+from dandiapi.api.services.permissions.dandiset import add_dandiset_owner
 from dandiapi.api.storage import get_boto_client
 from dandiapi.zarr.models import ZarrArchive
 
 if TYPE_CHECKING:
-    from django.contrib.auth import User
+    from django.contrib.auth.models import User
 
     from dandiapi.api.models.audit import AuditRecordType
 
@@ -88,7 +88,7 @@ def test_audit_change_owners(api_client, user_factory, draft_version):
     charlie = user_factory()
 
     dandiset = draft_version.dandiset
-    assign_perm('owner', alice, dandiset)
+    add_dandiset_owner(dandiset, alice)
 
     # Change the owners.
     new_owners = [bob, charlie]
@@ -110,17 +110,18 @@ def test_audit_change_owners(api_client, user_factory, draft_version):
 
     rec = get_latest_audit_record(dandiset=dandiset, record_type='change_owners')
     verify_model_properties(rec, alice)
-    assert rec.details == {
-        'added_owners': [user_info(u) for u in [bob, charlie]],
-        'removed_owners': [user_info(u) for u in [alice]],
-    }
+
+    assert sorted(rec.details['added_owners'], key=lambda x: x['username']) == sorted(
+        [user_info(u) for u in [bob, charlie]], key=lambda x: x['username']
+    )
+    assert rec.details['removed_owners'] == [user_info(alice)]
 
 
 @pytest.mark.django_db
 def test_audit_update_metadata(api_client, draft_version, user):
     # Create a Dandiset.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
 
     # Edit its metadata.
     metadata = draft_version.metadata
@@ -149,7 +150,7 @@ def test_audit_update_metadata(api_client, draft_version, user):
 def test_audit_delete_dandiset(api_client, user, draft_version):
     # Create a Dandiset.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
 
     # Delete the dandiset.
     api_client.force_authenticate(user=user)
@@ -187,7 +188,7 @@ def test_audit_unembargo(api_client, user):
 def test_audit_add_asset(api_client, user, draft_version, asset_blob_factory):
     # Create a Dandiset.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
 
     # Add a new asset.
     blob = asset_blob_factory()
@@ -217,7 +218,7 @@ def test_audit_update_asset(
 ):
     # Create a Dandiset with an asset.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
 
     path = 'foo/bar.txt'
     asset = draft_asset_factory(path=path)
@@ -251,7 +252,7 @@ def test_audit_remove_asset(
 ):
     # Create a Dandiset with an asset.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
 
     path = 'foo/bar.txt'
     asset = draft_asset_factory(path=path)
@@ -278,7 +279,7 @@ def test_audit_publish_dandiset(
 ):
     # Create a Dandiset whose draft version has one asset.
     dandiset = dandiset_factory()
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
     draft_version = draft_version_factory(dandiset=dandiset)
     draft_asset = draft_asset_factory()
     draft_version.assets.add(draft_asset)
@@ -306,7 +307,7 @@ def test_audit_publish_dandiset(
 def test_audit_zarr_create(api_client, user, draft_version):
     # Create a Dandiset.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
 
     # Create a Zarr archive.
     api_client.force_authenticate(user=user)
@@ -334,7 +335,7 @@ def test_audit_upload_zarr_chunks(api_client, user, draft_version, zarr_archive_
 
     # Create a Dandiset and a Zarr archive.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
     zarr = zarr_archive_factory(dandiset=dandiset)
 
     # Request some chunk uploads.
@@ -362,7 +363,7 @@ def test_audit_finalize_zarr(
 
     # Create a Dandiset and a Zarr archive.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
     zarr = zarr_archive_factory(dandiset=dandiset)
 
     # Request some chunk uploads.
@@ -403,7 +404,7 @@ def test_audit_delete_zarr_chunks(
 
     # Create a Dandiset and a Zarr archive.
     dandiset = draft_version.dandiset
-    assign_perm('owner', user, dandiset)
+    add_dandiset_owner(dandiset, user)
     zarr = zarr_archive_factory(dandiset=dandiset)
 
     # Request some chunk uploads.

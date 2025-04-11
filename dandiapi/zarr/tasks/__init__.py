@@ -3,10 +3,12 @@ from __future__ import annotations
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.db import transaction
+from django.utils import timezone
 from zarr_checksum import compute_zarr_checksum
 from zarr_checksum.generators import S3ClientOptions, yield_files_s3
 
 from dandiapi.api.asset_paths import add_zarr_paths, delete_zarr_paths
+from dandiapi.api.models.version import Version
 from dandiapi.api.storage import get_storage_params
 from dandiapi.zarr.models import ZarrArchive, ZarrArchiveStatus
 
@@ -27,30 +29,33 @@ def ingest_zarr_archive(zarr_id: str, *, force: bool = False):
         zarr.checksum = None
         zarr.save(update_fields=['status', 'checksum'])
 
+    # Instantiate updater and add files as they come in.
+    # Compute the checksum before starting the transaction to avoid long lived locks.
+    logger.info('Computing checksum for zarr %s...', zarr.zarr_id)
+    storage_params = get_storage_params(zarr.storage)
+    checksum = compute_zarr_checksum(
+        yield_files_s3(
+            bucket=zarr.storage.bucket_name,
+            prefix=zarr.s3_path(''),
+            client_options=S3ClientOptions(
+                endpoint_url=storage_params['endpoint_url'],
+                aws_access_key_id=storage_params['access_key'],
+                aws_secret_access_key=storage_params['secret_key'],
+                region_name='us-east-1',
+            ),
+        )
+    )
+
     # Zarr is in correct state, lock until ingestion finishes
     with transaction.atomic():
-        zarr = ZarrArchive.objects.select_for_update().get(
-            zarr_id=zarr_id, status=ZarrArchiveStatus.INGESTING
+        zarr = (
+            ZarrArchive.objects.select_related('dandiset')
+            .select_for_update()
+            .get(zarr_id=zarr_id, status=ZarrArchiveStatus.INGESTING)
         )
 
         # Remove all asset paths associated with this zarr before ingest
         delete_zarr_paths(zarr)
-
-        # Instantiate updater and add files as they come in
-        logger.info('Computing checksum for zarr %s...', zarr.zarr_id)
-        storage_params = get_storage_params(zarr.storage)
-        checksum = compute_zarr_checksum(
-            yield_files_s3(
-                bucket=zarr.storage.bucket_name,
-                prefix=zarr.s3_path(''),
-                client_options=S3ClientOptions(
-                    endpoint_url=storage_params['endpoint_url'],
-                    aws_access_key_id=storage_params['access_key'],
-                    aws_secret_access_key=storage_params['secret_key'],
-                    region_name='us-east-2',
-                ),
-            )
-        )
 
         # Set zarr fields
         zarr.checksum = checksum.digest
@@ -61,6 +66,11 @@ def ingest_zarr_archive(zarr_id: str, *, force: bool = False):
 
         # Add asset paths after ingest is finished
         add_zarr_paths(zarr)
+
+        # Set version status back to PENDING, and update modified.
+        Version.objects.filter(id=zarr.dandiset.draft_version.id).update(
+            status=Version.Status.PENDING, modified=timezone.now()
+        )
 
 
 def ingest_dandiset_zarrs(dandiset_id: int, **kwargs):
