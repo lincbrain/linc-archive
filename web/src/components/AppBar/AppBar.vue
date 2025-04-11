@@ -224,12 +224,6 @@ const navItems: NavigationItem[] = [
     external: true,
   },
   {
-    text: 'Starred Dandisets',
-    to: 'starredDandisets',
-    external: false,
-    if: loggedInFunc,
-  },
-  {
     text: 'Documentation',
     to: lincDocumentationUrl,
     external: true,
