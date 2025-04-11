@@ -153,13 +153,9 @@ class DandisetSearchFilter(filters.BaseFilterBackend):
 class DandisetViewSet(ReadOnlyModelViewSet):
     serializer_class = DandisetDetailSerializer
     pagination_class = DandiPagination
-<<<<<<< HEAD
-    filter_backends = [filters.SearchFilter, DandisetFilterBackend]
+    filter_backends = [DandisetSearchFilter, DandisetOrderingFilter]
     search_fields = ['versions__metadata']
     permission_classes = [IsApproved]
-=======
-    filter_backends = [DandisetSearchFilter, DandisetOrderingFilter]
->>>>>>> upstream/master
 
     lookup_value_regex = Dandiset.IDENTIFIER_REGEX
     # This is to maintain consistency with the auto-generated names shown in swagger.

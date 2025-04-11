@@ -71,7 +71,6 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import CookieLaw from 'vue-cookie-law';
 
 import { dandiAboutUrl, lincBrainUrl, sentryLandingPageUrl } from '@/utils/constants';
 import { cookiesEnabled, webknossosRest } from '@/rest';
@@ -91,7 +90,7 @@ const handleWebKnossosClick = async () => {
 };
 export default defineComponent({
   name: 'DandiFooter',
-  components: { CookieLaw },
+  components: { },
   setup() {
     return {
       lincBrainUrl,

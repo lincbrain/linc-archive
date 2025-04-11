@@ -129,8 +129,5 @@ dmypy.json
 
 # Editor settings
 .vscode
-<<<<<<< HEAD
-=======
 .idea/
->>>>>>> upstream/master
 .DS_Store

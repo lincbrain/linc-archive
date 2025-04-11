@@ -13,15 +13,18 @@ email=$2
 
 cd web/
 
-# Build Docker image (include the path to the Dockerfile's context)
+# # # Build Docker image (include the path to the Dockerfile's context)
 docker build -t $image_name -f Dockerfile.dev .
 
-# Run the Docker container for frontend in background
+# # # Run the Docker container for frontend in background
 docker run -d -v "$(pwd):/usr/src/app" -v /usr/src/app/node_modules -p 8085:8085 -e CHOKIDAR_USEPOLLING=true $image_name
 
 cd ..
 
-# Run Docker Compose commands for backend
+# # # Run Docker Compose commands for backend
+# # To fix them run 'python manage.py makemigrations --merge'
+
+docker compose run --rm django ./manage.py makemigrations --merge
 docker compose run --rm django ./manage.py migrate
 docker compose run --rm django ./manage.py createcachetable
 docker compose run --rm django ./manage.py createsuperuser

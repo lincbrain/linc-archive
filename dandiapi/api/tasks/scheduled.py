@@ -23,11 +23,8 @@ from dandiapi.analytics.tasks import collect_s3_log_records_task
 from dandiapi.api.mail import send_dandisets_to_unembargo_message, send_pending_users_message
 from dandiapi.api.models import UserMetadata, Version
 from dandiapi.api.models.asset import Asset
-<<<<<<< HEAD
 from dandiapi.api.models.dandiset import Dandiset
-=======
 from dandiapi.api.services.garbage_collection import garbage_collect
->>>>>>> upstream/master
 from dandiapi.api.services.metadata import version_aggregate_assets_summary
 from dandiapi.api.services.metadata.exceptions import VersionMetadataConcurrentlyModifiedError
 from dandiapi.api.tasks import (
@@ -144,7 +141,7 @@ def refresh_materialized_view_search() -> None:
 @shared_task(soft_time_limit=100)
 def populate_webknossos_datasets_and_annotations_task() -> None:
     populate_webknossos_datasets_and_annotations({}, 'webknossos')
-    
+
 @shared_task(soft_time_limit=60)
 def garbage_collection() -> None:
     garbage_collect()
