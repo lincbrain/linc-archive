@@ -132,17 +132,18 @@
 
     <v-spacer />
 
-    <div v-if="!insideIFrame">
+    <div v-if="!insideIFrame" class="d-flex align-center">
+
       <template v-if="loggedIn">
         <v-btn
           :disabled="!user?.approved"
           :to="{ name: 'createDandiset' }"
           class="mx-3"
-          color="primary"
+          color="#c44fc4"
           variant="elevated"
           rounded="pill"
         >
-          New Dandiset
+          New Dataset
         </v-btn>
         <UserMenu />
       </template>
