@@ -53,7 +53,7 @@
             mdi-open-in-new
           </v-icon>
           <br>
-          - <button
+          <!-- - <button
             target="_blank"
             rel="noopener"
             href="#"
@@ -62,7 +62,7 @@
           <v-icon x-small>
             mdi-open-in-new
           </v-icon>
-          <br>
+          <br> -->
         </v-col>
       </v-row>
     </v-container>
