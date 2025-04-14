@@ -276,6 +276,92 @@
                     </v-menu>
                   </v-list-item-action>
 
+                  <v-list-item-action v-if="item.asset" class="px-2">
+                    <v-menu
+                      location="bottom left"
+                    >
+
+                      <template #activator="{ props: openWithProps }">
+                        <v-btn
+                          color="success"
+                          size="x-small"
+                          :disabled="!item.asset.webknossos_info || !item.asset.webknossos_info?.length"
+                          v-bind="openWithProps"
+                        >
+                         WebKNOSSOS<v-icon size="small">
+                            mdi-menu-down
+                          </v-icon>
+                        </v-btn>
+                      </template>
+
+                    <v-list
+                      v-if="item && item.asset.webknossos_info"
+                      dense
+                    >
+                      <v-subheader
+                        v-if="item.asset.webknossos_info"
+                        class="font-weight-medium"
+                      >
+                        WEBKNOSSOS DATASETS CONTAINING ASSET
+                      </v-subheader>
+                      <v-list-item
+                        v-for="el in item.asset.webknossos_info"
+                        :key="item.asset.s3_uri"
+                        @click.stop.prevent="el ? handleWebKnossosClick(el.webknossos_url) : null"
+                        :href="el.webknossos_url ? el.webknossos_url : null"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <v-list-item-title class="font-weight-light">
+                          {{ el.webknossos_name ? el.webknossos_name : "No datasets associated" }}
+                        </v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+
+                    <v-list v-if="item && item.asset.webknossos_info" dense>
+                    <v-subheader
+                      v-if="item.asset.webknossos_info.some(dataset => dataset.webknossos_annotations && dataset.webknossos_annotations.length > 0)"
+                      class="font-weight-medium"
+                    >
+                      WEBKNOSSOS ANNOTATIONS CONTAINING ASSET
+                    </v-subheader>
+
+                    <!-- Check if the list has no datasets or annotations -->
+                    <v-subheader
+                      v-else
+                      class="font-weight-medium"
+                    >
+                      No annotations associated
+                    </v-subheader>
+
+                    <!-- Iterate over each dataset -->
+                    <v-list-item-group
+                      v-for="dataset in item.asset.webknossos_info"
+                      :key="dataset.webknossos_name"
+                      class="mb-3"
+                    >
+                      <v-list dense v-if="dataset.webknossos_annotations && dataset.webknossos_annotations.length > 0">
+                        <v-list-item
+                          v-for="annotation in dataset.webknossos_annotations"
+                          :key="annotation.webknossos_annotation_url"
+                          @click="annotation ? handleWebKnossosClick(annotation.webknossos_annotation_url) : null"
+                          :href="annotation.webknossos_annotation_url ? annotation.webknossos_annotation_url : null"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <v-list-item-title class="font-weight-light">
+                            {{ annotation.webknossos_annotation_name.trim() !== '' ? (annotation.webknossos_annotation_name + (annotation.webknossos_annotation_author ? ' by ' + annotation.webknossos_annotation_author : '')) : 'annotation untitled by ' + annotation.webknossos_annotation_author }}
+                          </v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </v-list-item-group>
+
+                    </v-list>
+
+
+                    </v-menu>
+                  </v-list-item-action>
+
                   <v-list-item-action
                     v-if="item.aggregate_size"
                     class="justify-end"
@@ -572,6 +658,20 @@ function fileSize(item: AssetPath) {
 
 function showDelete(item: AssetPath) {
   return props.version === 'draft' && item.asset && (isAdmin.value || isOwner.value);
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function handleWebKnossosClick(url: string) {
+  const response = await fetch('https://api.lincbrain.org/api/external-api/login/webknossos/', {
+    method: 'GET', // or 'POST' if that's what the API requires
+    credentials: 'include' // to ensure cookies are sent and received
+  });
+  await response.json();
+  await sleep(1000); // Wait for WebKNOSSOS login to finalize, since round trip is longer
+  window.open(url, '_blank');
 }
 
 async function getItems() {
