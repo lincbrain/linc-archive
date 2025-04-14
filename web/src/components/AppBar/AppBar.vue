@@ -15,11 +15,10 @@
               v-if="!navItem.if || navItem.if()"
               :key="navItem.text"
               :to="navItem.external ? undefined : {name: navItem.to}"
-              :href="navItem.external && navItem.text !== 'WebKNOSSOS' ? navItem.to : undefined"
+              :href="navItem.external && navItem.to !== 'WebKNOSSOS' ? navItem.to : undefined"
               :target="navItem.external && navItem.text !== 'WebKNOSSOS' ? '_blank' : undefined"
               :rel="navItem.external && navItem.text !== 'WebKNOSSOS' ? 'noopener' : undefined"
               exact
-              text
             >
               <v-list-item-content
                 v-if="!navItem.external"
