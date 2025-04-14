@@ -207,6 +207,32 @@
                   </v-list-item-action>
 
                   <v-list-item-action v-if="item.asset">
+                    <v-tooltip location="top">
+                      <template #activator="{ props: s3PathProps }">
+                        <v-btn
+                          icon
+                          variant="text"
+                          v-bind="s3PathProps"
+                        >
+                          <v-icon @click.stop="copyToClipboard(item.asset?.s3_uri)">mdi-content-copy</v-icon>
+                        </v-btn>
+                      </template>
+                      <span>Copy S3 Link</span>
+                    </v-tooltip>
+                  </v-list-item-action>
+
+                  <!-- <v-list-item-action
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <v-list-item-title class="font-weight-light">
+                    <span v-if="copied" style="color: green; padding-left: 8px; padding-right: 8px; margin-left: 16px;">Copied!</span>
+                    </v-list-item-title>
+                    <v-spacer></v-spacer>
+                    <v-icon @click.stop="copyToClipboard(item.asset?.s3_uri)">mdi-content-copy</v-icon>
+                  </v-list-item-action> -->
+
+                  <v-list-item-action v-if="item.asset">
                     <v-menu
                       location="bottom left"
                     >
@@ -237,7 +263,8 @@
                         <v-list-item
                           v-for="el in item.services"
                           :key="el.name"
-                          :href="el.url"
+                          :href="!el.isNeuroglancer ? el.url : null"
+                          @click="el.isNeuroglancer ? redirectToNeuroglancerUrl(item) : null"
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -246,6 +273,92 @@
                           </v-list-item-title>
                         </v-list-item>
                       </v-list>
+                    </v-menu>
+                  </v-list-item-action>
+
+                  <v-list-item-action v-if="item.asset" class="px-2">
+                    <v-menu
+                      location="bottom left"
+                    >
+
+                      <template #activator="{ props: openWithProps }">
+                        <v-btn
+                          color="success"
+                          size="x-small"
+                          :disabled="!item.asset.webknossos_info || !item.asset.webknossos_info?.length"
+                          v-bind="openWithProps"
+                        >
+                         WebKNOSSOS<v-icon size="small">
+                            mdi-menu-down
+                          </v-icon>
+                        </v-btn>
+                      </template>
+
+                    <v-list
+                      v-if="item && item.asset.webknossos_info"
+                      dense
+                    >
+                      <v-subheader
+                        v-if="item.asset.webknossos_info"
+                        class="font-weight-medium"
+                      >
+                        WEBKNOSSOS DATASETS CONTAINING ASSET
+                      </v-subheader>
+                      <v-list-item
+                        v-for="el in item.asset.webknossos_info"
+                        :key="item.asset.s3_uri"
+                        @click.stop.prevent="el ? handleWebKnossosClick(el.webknossos_url) : null"
+                        :href="el.webknossos_url ? el.webknossos_url : null"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <v-list-item-title class="font-weight-light">
+                          {{ el.webknossos_name ? el.webknossos_name : "No datasets associated" }}
+                        </v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+
+                    <v-list v-if="item && item.asset.webknossos_info" dense>
+                    <v-subheader
+                      v-if="item.asset.webknossos_info.some(dataset => dataset.webknossos_annotations && dataset.webknossos_annotations.length > 0)"
+                      class="font-weight-medium"
+                    >
+                      WEBKNOSSOS ANNOTATIONS CONTAINING ASSET
+                    </v-subheader>
+
+                    <!-- Check if the list has no datasets or annotations -->
+                    <v-subheader
+                      v-else
+                      class="font-weight-medium"
+                    >
+                      No annotations associated
+                    </v-subheader>
+
+                    <!-- Iterate over each dataset -->
+                    <v-list-item-group
+                      v-for="dataset in item.asset.webknossos_info"
+                      :key="dataset.webknossos_name"
+                      class="mb-3"
+                    >
+                      <v-list dense v-if="dataset.webknossos_annotations && dataset.webknossos_annotations.length > 0">
+                        <v-list-item
+                          v-for="annotation in dataset.webknossos_annotations"
+                          :key="annotation.webknossos_annotation_url"
+                          @click="annotation ? handleWebKnossosClick(annotation.webknossos_annotation_url) : null"
+                          :href="annotation.webknossos_annotation_url ? annotation.webknossos_annotation_url : null"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <v-list-item-title class="font-weight-light">
+                            {{ annotation.webknossos_annotation_name.trim() !== '' ? (annotation.webknossos_annotation_name + (annotation.webknossos_annotation_author ? ' by ' + annotation.webknossos_annotation_author : '')) : 'annotation untitled by ' + annotation.webknossos_annotation_author }}
+                          </v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </v-list-item-group>
+
+                    </v-list>
+
+
                     </v-menu>
                   </v-list-item-action>
 
@@ -296,6 +409,7 @@ const FILES_PER_PAGE = 15;
 interface AssetService {
   name: string,
   url: string,
+  isNeuroglancer?: boolean
 }
 
 interface ExtendedAssetPath extends AssetPath {
@@ -325,53 +439,59 @@ const sortByFolderThenName = (a: ExtendedAssetPath, b: ExtendedAssetPath) => {
 };
 
 const EXTERNAL_SERVICES = [
-  {
-    name: 'Bioimagesuite/Viewer',
-    regex: /\.nii(\.gz)?$/,
-    maxsize: 1e9,
-    endpoint: 'https://bioimagesuiteweb.github.io/unstableapp/viewer.html?image=$asset_url$',
-  },
+  // {
+  //   name: 'Bioimagesuite/Viewer',
+  //   regex: /\.nii(\.gz)?$/,
+  //   maxsize: 1e9,
+  //   endpoint: 'https://bioimagesuiteweb.github.io/unstableapp/viewer.html?image=$asset_url$',
+  // },
 
-  {
-    name: 'MetaCell/NWBExplorer',
-    regex: /\.nwb$/,
-    maxsize: 1e9,
-    endpoint: 'http://nwbexplorer.opensourcebrain.org/nwbfile=$asset_url$',
-  },
+  // {
+  //   name: 'MetaCell/NWBExplorer',
+  //   regex: /\.nwb$/,
+  //   maxsize: 1e9,
+  //   endpoint: 'http://nwbexplorer.opensourcebrain.org/nwbfile=$asset_url$',
+  // },
 
+  // {
+  //   name: 'VTK/ITK Viewer',
+  //   regex: /\.ome\.zarr$/,
+  //   maxsize: Infinity,
+  //   endpoint: 'https://kitware.github.io/itk-vtk-viewer/app/?gradientOpacity=0.3&image=$asset_url$',
+  // },
+
+  // {
+  //   name: 'OME Zarr validator',
+  //   regex: /\.ome\.zarr$/,
+  //   maxsize: Infinity,
+  //   endpoint: 'https://ome.github.io/ome-ngff-validator/?source=$asset_url$',
+  // },
+
+  // {
+  //   name: 'Neurosift',
+  //   regex: /\.nwb$/,
+  //   maxsize: Infinity,
+  //   endpoint: 'https://neurosift.app/nwb?url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
+  // },
+
+  // {
+  //   name: 'Neurosift',
+  //   regex: /\.nwb\.lindi\.(json|tar)$/,
+  //   maxsize: Infinity,
+  //   endpoint: 'https://neurosift.app/nwb?url=$asset_dandi_url$&st=lindi&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
+  // },
+
+  // {
+  //   name: 'Neurosift',
+  //   regex: /\.avi$/,
+  //   maxsize: Infinity,
+  //   endpoint: 'https://v1.neurosift.app?p=/avi&url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
+  // },
   {
-    name: 'VTK/ITK Viewer',
-    regex: /\.ome\.zarr$/,
+    name: 'Neuroglancer',
+    regex: /\.(nwb|txt|nii(\.gz)?|ome\.zarr)$/,  // TODO: .txt for testing purposes
     maxsize: Infinity,
-    endpoint: 'https://kitware.github.io/itk-vtk-viewer/app/?gradientOpacity=0.3&image=$asset_url$',
-  },
-
-  {
-    name: 'OME Zarr validator',
-    regex: /\.ome\.zarr$/,
-    maxsize: Infinity,
-    endpoint: 'https://ome.github.io/ome-ngff-validator/?source=$asset_url$',
-  },
-
-  {
-    name: 'Neurosift',
-    regex: /\.nwb$/,
-    maxsize: Infinity,
-    endpoint: 'https://neurosift.app/nwb?url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
-  },
-
-  {
-    name: 'Neurosift',
-    regex: /\.nwb\.lindi\.(json|tar)$/,
-    maxsize: Infinity,
-    endpoint: 'https://neurosift.app/nwb?url=$asset_dandi_url$&st=lindi&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
-  },
-
-  {
-    name: 'Neurosift',
-    regex: /\.avi$/,
-    maxsize: Infinity,
-    endpoint: 'https://v1.neurosift.app?p=/avi&url=$asset_dandi_url$&dandisetId=$dandiset_id$&dandisetVersion=$dandiset_version$',
+    endpoint: 'value-defaults-to-endpoint-logic'
   }
 ];
 type Service = typeof EXTERNAL_SERVICES[0];
@@ -402,6 +522,7 @@ const deletePopupOpen = ref(false);
 const page = ref(1);
 const pages = ref(0);
 const updating = ref(false);
+const copied = ref(false);
 
 // Computed
 const owners = computed(() => store.owners?.map((u) => u.username) || null);
@@ -428,6 +549,38 @@ function serviceURL(endpoint: string, data: {
     .replaceAll('$asset_url$', data.assetUrl)
     .replaceAll('$asset_dandi_url$', data.assetDandiUrl)
     .replaceAll('$asset_s3_url$', data.assetS3Url);
+}
+
+  function copyToClipboard(s3Uri?: string) {
+    if (s3Uri) {
+      navigator.clipboard.writeText(s3Uri).then(() => {
+        copied.value = true;
+        setTimeout(() => {
+          copied.value = false;
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err)
+      });
+    } else {
+      console.error('No S3 URI found')
+    }
+  }
+
+async function redirectToNeuroglancerUrl(item: any) {
+  try {
+    const url = 'https://api.lincbrain.org/api/permissions/s3/' + item.asset.url; // Directly appending
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    window.open(data.full_url, "_blank");
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
 }
 
 function getExternalServices(path: AssetPath, info: {dandisetId: string, dandisetVersion: string}) {
@@ -463,6 +616,7 @@ function getExternalServices(path: AssetPath, info: {dandisetId: string, dandise
         assetDandiUrl,
         assetS3Url,
       }),
+      isNeuroglancer: service.name === 'Neuroglancer',
     }));
 }
 
@@ -504,6 +658,20 @@ function fileSize(item: AssetPath) {
 
 function showDelete(item: AssetPath) {
   return props.version === 'draft' && item.asset && (isAdmin.value || isOwner.value);
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function handleWebKnossosClick(url: string) {
+  const response = await fetch('https://api.lincbrain.org/api/external-api/login/webknossos/', {
+    method: 'GET', // or 'POST' if that's what the API requires
+    credentials: 'include' // to ensure cookies are sent and received
+  });
+  await response.json();
+  await sleep(1000); // Wait for WebKNOSSOS login to finalize, since round trip is longer
+  window.open(url, '_blank');
 }
 
 async function getItems() {
