@@ -2,11 +2,11 @@
   "name": "dandi-archive",
   "version": "0.0.0",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 8085",
     "build": "vite build",
     "preview": "vite preview --port 4173",
     "type-check": "vue-tsc --noEmit",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --max-warnings=0 --ignore-path .gitignore"
   },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.7",

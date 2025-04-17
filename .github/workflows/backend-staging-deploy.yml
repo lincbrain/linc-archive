@@ -3,10 +3,11 @@ name: Deploy backend to staging
 on:
   push:
     branches:
-      - master
+      - staging
     paths-ignore:
       - "web/**"
       - "CHANGELOG.md"
+  workflow_dispatch:
 
 concurrency:
   # If this workflow is already running, cancel it to avoid a scenario
@@ -18,16 +19,11 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to Heroku
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # fetch history for all branches and tags
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
@@ -41,7 +37,7 @@ jobs:
           python -m build --sdist
 
       - name: Create Heroku Build
-        run: heroku builds:create -a dandi-api-staging --source-tar dist/*.tar.gz
+        run: heroku builds:create -a linc-brain-staging --source-tar dist/*.tar.gz
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY  }}
           HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL  }}

@@ -31,6 +31,12 @@ class DandiMixin(ConfigMixin):
     # Needed for Sentry Performance to work in frontend
     CORS_ALLOW_HEADERS = (*default_headers, 'baggage', 'sentry-trace')
 
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOWED_ORIGINS = [
+        'https://lincbrain.org',
+        'https://staging.lincbrain.org'
+    ]
+
     @staticmethod
     def mutate_configuration(configuration: type[ComposedConfiguration]):
         # Install local apps first, to ensure any overridden resources are found first
@@ -107,7 +113,7 @@ class DandiMixin(ConfigMixin):
     DANDI_WEB_APP_URL = values.URLValue(environ_required=True)
     DANDI_API_URL = values.URLValue(environ_required=True)
     DANDI_JUPYTERHUB_URL = values.URLValue(environ_required=True)
-    DANDI_DEV_EMAIL = values.EmailValue(environ_required=True)
+    DANDI_DEV_EMAIL = values.EmailValue(environ_required=False)
 
     DANDI_VALIDATION_JOB_INTERVAL = values.IntegerValue(environ=True, default=60)
 
@@ -131,11 +137,14 @@ class DandiMixin(ConfigMixin):
     # the number of concurrent tasks (default is 8) to keep memory usage down.
     CELERY_WORKER_CONCURRENCY = values.IntegerValue(environ=True, default=8)
 
+    CELERY_TIMEZONE = 'US/Eastern'
+    CELERY_ENABLE_UTC = True
+
     # Automatically approve new users by default
     AUTO_APPROVE_USERS = True
 
     # Disable github oauth by default
-    ENABLE_GITHUB_OAUTH = False
+    ENABLE_GITHUB_OAUTH = True
 
 
 class DevelopmentConfiguration(DandiMixin, DevelopmentBaseConfiguration):
@@ -193,6 +202,15 @@ class HerokuProductionConfiguration(DandiMixin, HerokuProductionBaseConfiguratio
     # manually approved by an admin.
     AUTO_APPROVE_USERS = False
 
+    # TODO: Aaron -- this wasn't set up initially...
+    if 'ALLOWED_HOSTS' not in globals():
+        ALLOWED_HOSTS = []
+
+    ALLOWED_HOSTS += [
+        'linc-staging-terraform-0b817cb1246b.herokuapp.com/',
+        'api.lincbrain.org'
+    ]
+
 
 # NOTE: The staging configuration uses a custom OAuth toolkit `Application` model
 # (`StagingApplication`) to allow for wildcards in OAuth redirect URIs (to support Netlify branch
@@ -202,3 +220,12 @@ class HerokuProductionConfiguration(DandiMixin, HerokuProductionBaseConfiguratio
 # the API server is running in (production/local or staging).
 class HerokuStagingConfiguration(HerokuProductionConfiguration):
     OAUTH2_PROVIDER_APPLICATION_MODEL = 'api.StagingApplication'
+
+    if 'ALLOWED_HOSTS' not in globals():
+        ALLOWED_HOSTS = []
+
+    ALLOWED_HOSTS += [
+        'linc-brain-staging-7c7293e5e9f8.herokuapp.com/',
+        'staging-api.lincbrain.org'
+    ]
+

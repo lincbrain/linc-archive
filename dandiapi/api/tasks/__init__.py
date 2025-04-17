@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
+import requests
 from django.contrib.auth.models import User
 
 from dandiapi.api.doi import delete_doi
@@ -90,6 +91,35 @@ def publish_dandiset_task(dandiset_id: int, user_id: int):
 
     _publish_dandiset(dandiset_id=dandiset_id, user_id=user_id)
 
+
+@shared_task
+def register_external_api_request_task(method: str, external_endpoint: str, payload: dict = None,
+                                       query_params: dict = None):
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    try:
+        if method.upper() == 'POST':
+            response = requests.post(external_endpoint, json=payload, headers=headers, timeout=10)
+            response.raise_for_status()
+            logger.info(f"POST to {external_endpoint} successful with payload: {payload}")
+            logger.info(f"Response: {response.status_code}, {response.text}")
+        elif method.upper() == 'GET':
+            response = requests.get(external_endpoint, params=query_params, headers=headers,
+                                    timeout=10)
+            logger.info(f"GET to {external_endpoint} successful")
+            logger.info(f"Response: {response.status_code}, {response.headers}")
+            return {'status_code': response.status_code, 'headers': response.headers}
+        else:
+            logger.error("Unsupported HTTP method: %s", method)
+            return
+    except requests.exceptions.HTTPError as http_err:
+        logger.error(f"HTTP error occurred: {http_err}")
+        logger.error(f"Response content: {response.text}")  # Log response in case of error
+    except requests.exceptions.RequestException as req_err:
+        logger.error(f"Request exception occurred: {req_err}")
+    except Exception as err:
+        logger.error(f"An unexpected error occurred: {err}")
 
 @shared_task(soft_time_limit=1200)
 def unembargo_dandiset_task(dandiset_id: int, user_id: int):
